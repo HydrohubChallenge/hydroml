@@ -1,0 +1,20 @@
+version: "3.5"
+
+services:
+
+  jupyter:
+    build: ./docker/jupyter
+    restart: unless-stopped
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/data
+    user: root
+    environment:
+      - GRANT_SUDO=yes
+    ports:
+      - "8888:8888"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
