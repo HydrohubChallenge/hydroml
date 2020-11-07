@@ -40,7 +40,8 @@ RUN pip install \
     nasadap \
     h5py \
     cmocean \
-    pendulum
+    pendulum \
+    iso8601
 
 RUN fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
