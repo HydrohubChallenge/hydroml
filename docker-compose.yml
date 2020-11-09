@@ -18,3 +18,38 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
+
+  api:
+    build: ./docker/django
+    command: sh /entrypoint.sh
+    env_file:
+      - .env      
+    restart: unless-stopped
+    volumes:
+      - ./api:/api
+      - ./data:/data
+    ports:
+      - "8080:8000"
+      - "9999:9999"
+    depends_on:
+      - db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  db:
+    image: postgis/postgis:12-3.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
