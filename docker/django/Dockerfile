@@ -5,8 +5,6 @@ ENV PYTHONUNBUFFERED 1
 
 EXPOSE 8000
 
-RUN addgroup -q django && adduser -q --ingroup django --disabled-password django
-
 RUN apt-get update && \
     apt-get install -y \
         python3-gdal \
@@ -17,7 +15,10 @@ RUN apt-get update && \
         htop \
         wait-for-it
 
-RUN mkdir /api
+RUN rm -rf /api
+
+RUN addgroup -q django && \
+    adduser --home /api --quiet --ingroup django --disabled-password django
 
 WORKDIR /api
 
@@ -26,4 +27,6 @@ COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 COPY entrypoint.sh /entrypoint.sh
+
+USER django
 
