@@ -11,3 +11,9 @@ cp /old/.profile  .
 .s
 ls -la
 exit
+env
+exit
+env
+exit
+ls
+exit

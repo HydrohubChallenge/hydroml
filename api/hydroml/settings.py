@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
 ]
 
 MIDDLEWARE = [
@@ -76,12 +77,12 @@ WSGI_APPLICATION = 'hydroml.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['POSTGRES_DB'],
-        'USER': os.environ['POSTGRES_USER'],
-        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': os.environ['POSTGRES_HOST'],
-        'PORT': os.environ['POSTGRES_PORT'],
+        'ENGINE': os.getenv('HYDROML_DB_ENGINE'),
+        'HOST': os.getenv('HYDROML_DB_HOST'),
+        'PORT': os.getenv('HYDROML_DB_PORT'),
+        'NAME':  os.getenv('HYDROML_DB_NAME'),
+        'USER': os.getenv('HYDROML_DB_USER'),
+        'PASSWORD': os.getenv('HYDROML_DB_PASSWORD'),
     }
 }
 
