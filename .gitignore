@@ -4,6 +4,7 @@ data/
 
 .env
 
+api/.bash_history
 
 # from https://github.com/github/gitignore/blob/master/Python.gitignore
 
