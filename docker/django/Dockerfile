@@ -13,20 +13,25 @@ RUN apt-get update && \
         openjdk-11-jdk \
         vim \
         htop \
-        wait-for-it
-
-RUN rm -rf /api
+        wait-for-it \
+        binutils \
+        libproj-dev \
+        gdal-bin
 
 RUN addgroup -q django && \
-    adduser --home /api --quiet --ingroup django --disabled-password django
+    adduser --quiet --ingroup django --disabled-password django
+
+RUN mkdir /api
 
 WORKDIR /api
 
 COPY requirements.txt /requirements.txt
 
-RUN pip install -r /requirements.txt
-
 COPY entrypoint.sh /entrypoint.sh
 
 USER django
+
+ENV PATH=/home/django/.local/bin:$PATH
+
+RUN pip install -r /requirements.txt
 

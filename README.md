@@ -10,10 +10,17 @@ docker-compose exec api python manage.py migrate
 ```
 
 
+## API Jupyter
+
+```bash
+docker-compose exec api bash
+python manage.py shell_plus --notebook
+```
+Open one of the URLs from the log on the browser.
 
 ## Jupyter
 
-```
+```bash
 docker-compose up -d --build jupyter
 
 docker-compose logs jupyter

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -85,6 +86,12 @@ DATABASES = {
         'PASSWORD': os.getenv('HYDROML_DB_PASSWORD'),
     }
 }
+
+NOTEBOOK_ARGUMENTS = [
+    '--ip', '0.0.0.0',
+    '--port', '9999',
+    '--allow-root',
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
