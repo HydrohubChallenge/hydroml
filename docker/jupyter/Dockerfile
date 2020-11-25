@@ -27,8 +27,8 @@ RUN conda config --add channels conda-forge && \
 
 RUN conda install -c conda-forge gdal cartopy lxml
 
-#COPY requirements.txt /tmp/requirements.txt
-#RUN pip install -r /tmp/requirements.txt
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
 
 #RUN conda install --yes --file /tmp/requirements.txt && \
 #    fix-permissions $CONDA_DIR && \
