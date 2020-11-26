@@ -1,0 +1,64 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'fa/css/all.min.css' %}">
+        <link rel="stylesheet" href="{% static 'css/custom.stylesheet.css' %}">
+        <title>HydroHUB</title>
+    </head>
+
+    <body>
+
+        <div class="navbar-nav border-bottom">
+            <a class="navbar-brand d-flex" href="index.html">
+                <div class="navbar-brand-icon">
+                    <img src="{% static 'img/logo.png' %}" height="75px">
+                </div>
+            </a>
+        </div>
+        <!-- Page Wrapper -->
+        <div id="wrapper">
+
+            <!-- Sidebar -->
+            <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+                <!-- Sidebar Toggler (Sidebar) -->
+                <div class="text-right d-none d-md-inline">
+                    <button class="rounded-circle border-0" id="sidebarToggle"></button>
+                </div>
+
+                <!-- Divider -->
+                <hr class="sidebar-divider my-0">
+
+                <!-- Nav Item - Dashboard -->
+                <li class="nav-item active">
+                    <a class="nav-link" href="index.html">
+                        <i class="fas fa-fw fa-tachometer-alt"></i>
+                        <span>Dashboard</span></a>
+                </li>
+
+                <!-- Divider -->
+                <hr class="sidebar-divider">
+
+                <!-- Nav Item - Add other pages to the list-->
+
+
+            </ul>
+            <!-- End of Sidebar -->
+        </div>
+        
+
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+        <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+        <script src="{% static 'js/custom.script.js' %}"></script>
+
+       
+    </body>
+
+</html>
