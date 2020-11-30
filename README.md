@@ -27,3 +27,13 @@ docker-compose logs jupyter
 ```
 
 Open one of the URLs from the log on the browser.
+
+## Injects Anomalies: Water Levels
+
+```bash
+docker-compose up -d --build injects_anomalies_wl
+
+docker-compose logs injects_anomalies_wl
+```
+
+Open https:hostip/8050 on the browser.

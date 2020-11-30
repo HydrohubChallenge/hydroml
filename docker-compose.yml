@@ -13,7 +13,6 @@ services:
       - GRANT_SUDO=yes
     ports:
       - "8888:8888"
-      - "8050:8050"
     logging:
       driver: "json-file"
       options:
@@ -24,7 +23,7 @@ services:
     build: ./docker/django
     command: sh /entrypoint.sh
     env_file:
-      - .env      
+      - .env
     restart: unless-stopped
     volumes:
       - ./api:/api
@@ -54,3 +53,11 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
+
+  injects_anomalies_wl:
+    build:
+      context: ./docker/injects_anomalies_wl/
+      dockerfile: ./Dockerfile
+
+    ports:
+      - "8050:8050"
