@@ -7,7 +7,7 @@ from .forms import ProjectCreate
 
 @login_required
 def index(request):
-    dash = Project.objects.all()
+    dash = Project.objects.filter(owner=request.user)
     return render(request, "web/dashboard.html", {"dash": dash})
 
 
@@ -17,8 +17,9 @@ def create(request):
     if request.method == "POST":
         create = ProjectCreate(request.POST)
         if create.is_valid():
-            create.owner=request.user
-            create.save()
+            obj = create.save(commit=False)
+            obj.owner=request.user
+            obj.save()
             return redirect("index")
         else:
             return HttpResponse(

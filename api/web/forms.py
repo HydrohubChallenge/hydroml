@@ -8,9 +8,3 @@ class ProjectCreate(forms.ModelForm):
             'name',
             'describe',
         ]
-
-    def valid_form(self):
-        obj=form.save(commit=False)
-        obj.owner=self.request.user
-        obj.save()
-        return obj
