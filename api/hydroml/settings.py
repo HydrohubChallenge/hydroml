@@ -136,4 +136,8 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'root')
 
-STATICFILES_DIRS = ['static/hub']
+STATICFILES_DIRS = ['static/web']
+
+
+# Redirect to index after login
+LOGIN_REDIRECT_URL = 'index'

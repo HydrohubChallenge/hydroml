@@ -1,9 +1,8 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class BaseModel(models.Model):
-
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
@@ -12,13 +11,11 @@ class BaseModel(models.Model):
         auto_now_add=True,
     )
 
-
     class Meta:
         abstract = True
 
 
 class Project(BaseModel):
-
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='projects',
@@ -37,5 +34,3 @@ class Project(BaseModel):
 
     def __str__(self):
         return self.name
-
-

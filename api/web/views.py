@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from .models import Project
+from django.http import HttpResponse
+from django.shortcuts import render, redirect
+
 from .forms import ProjectCreate
+from .models import Project
 
 
 @login_required
@@ -18,7 +19,7 @@ def create(request):
         create = ProjectCreate(request.POST)
         if create.is_valid():
             obj = create.save(commit=False)
-            obj.owner=request.user
+            obj.owner = request.user
             obj.save()
             return redirect("index")
         else:
