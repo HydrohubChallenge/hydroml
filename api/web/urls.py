@@ -21,5 +21,5 @@ urlpatterns = [
     path('', views.index, name = 'index'),
     path('create/', views.create, name='create-project'),
     path('update/<int:project_id>', views.update_project),
-    path('delete/<int:project_id>', views.delete_project)
+    path('delete/<int:project_id>', views.delete_project),
 ]

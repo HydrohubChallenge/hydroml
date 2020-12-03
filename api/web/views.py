@@ -40,6 +40,7 @@ def update_project(request, project_id):
     project_form = ProjectCreate(request.POST or None, instance=project_sel)
     if project_form.is_valid():
         project_form.save()
+
         return redirect("index")
     return render(request, "web/create_form.html", {"create_form": project_form})
 

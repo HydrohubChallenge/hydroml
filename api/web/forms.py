@@ -6,5 +6,5 @@ class ProjectCreate(forms.ModelForm):
         model = Project
         fields = [
             'name',
-            'describe',
+            'description',
         ]

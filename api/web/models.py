@@ -8,7 +8,7 @@ class BaseModel(models.Model):
     )
 
     updated_at = models.DateTimeField(
-        auto_now_add=True,
+        auto_now=True,
     )
 
     class Meta:
@@ -28,9 +28,33 @@ class Project(BaseModel):
         max_length=50,
     )
 
-    describe = models.TextField(
+    description = models.TextField(
         default='New Project',
     )
+
+    def __str__(self):
+        return self.name
+
+
+class Label(BaseModel):
+    project_id = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+    )
+
+    name = models.CharField(
+        max_length=50,
+    )
+
+    description = models.TextField(
+        default='New Label',
+    )
+
+    color = models.CharField(
+        max_length=7,
+        default='#000000',
+    )
+
 
     def __str__(self):
         return self.name
