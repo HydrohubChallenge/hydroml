@@ -57,25 +57,31 @@ body {
   background-color: #fff;
 }
 
-#user-dropdown {
-  font-weight: 300;
-  font-size: 1.2rem;
-  text-align: right;
-  color: #336AAA;
+#login-box{
+  display:flex;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  max-width: 500px;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-body {
   display:flex;
   justify-content: center;
   align-items: center;
-  min-height: 90vh;
+  min-height: 90vh
 }
 
 .login-area {
   width: 100%;
   max-width: 350px;
+  justify-content: center;
+  align-items: center;
   text-align: center;
   padding: 10px;
+  padding-right: 20px;
 }
 
 .login-logo {
@@ -230,6 +236,11 @@ body {
   background-color: #fff;
 }
 
+#card-project{
+  margin: 10px;
+  padding: 1px;
+  max-width: 300px;
+}
 
 sub,
 sup {
@@ -821,6 +832,8 @@ pre code {
   margin-right: auto;
   margin-left: auto;
 }
+
+
 
 @media (min-width: 576px) {
   .container, .container-sm {
@@ -10023,7 +10036,7 @@ a:focus {
 }
 
 #wrapper #content-wrapper {
-  background-color: #f8f9fc;
+  background-color: #ffffff;
   width: 100%;
   overflow-x: hidden;
 }
@@ -10675,7 +10688,7 @@ a:focus {
 }
 
 .sidebar .sidebar-brand {
-  height: 4.375rem;
+  height: 6 rem;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 800;

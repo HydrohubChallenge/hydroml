@@ -4,40 +4,40 @@
 
 {% block content %}
 
+<div class="bg-white rounded" id="login-box">
+    <div class="login-area justify-content-center">
+        <img alt="Logo" class="login-logo" src="../../static/web/img/logo.png"/>
+        <h3 class="login-text">Login</h3>
+        {% if form.errors %}
+        <p>Your username and password didn't match. Please try again.</p>
+        {% endif %}
 
-<div class="login-area">
-    <img alt="Logo" class="login-logo" src="../../static/web/img/logo.png"/>
-    <h3 class="login-text">Login</h3>
-    {% if form.errors %}
-    <p>Your username and password didn't match. Please try again.</p>
-    {% endif %}
+        {% if next %}
+        {% if user.is_authenticated %}
+        <p>Your account doesn't have access to this page. To proceed,
+            please login with an account that has access.</p>
+        {% else %}
+        <p>Please login to see this page.</p>
+        {% endif %}
+        {% endif %}
+        <form class="login-input" action="{% url 'login' %}" method="POST">
+            {% csrf_token %}
+            <table class="login-input">
+                <tr>
+                    <td class="login-input">{{ form.username.label_tag }}</td>
+                    <td class="login-input">{{ form.username }}</td>
+                </tr>
+                <tr>
+                    <td class="login-input">{{ form.password.label_tag }}</td>
+                    <td class="login-input">{{ form.password }}</td>
+                </tr>
+            </table>
 
-    {% if next %}
-    {% if user.is_authenticated %}
-    <p>Your account doesn't have access to this page. To proceed,
-        please login with an account that has access.</p>
-    {% else %}
-    <p>Please login to see this page.</p>
-    {% endif %}
-    {% endif %}
-    <form class="login-input" action="{% url 'login' %}" method="POST">
-        {% csrf_token %}
-        <table class="login-input">
-            <tr>
-                <td class="login-input">{{ form.username.label_tag }}</td>
-                <td class="login-input">{{ form.username }}</td>
-            </tr>
-            <tr>
-                <td class="login-input">{{ form.password.label_tag }}</td>
-                <td class="login-input">{{ form.password }}</td>
-            </tr>
-        </table>
+            <input class="login-input btn btn-lg btn-primary btn-block" type="submit" value="Enter">
+            <input name="next" type="hidden" value="{{ next }}">
+        </form>
+        <a href="{% url 'password_reset' %}">Lost password?</a>
 
-        <input class="login-input btn btn-lg btn-primary btn-block" type="submit" value="Enter">
-        <input name="next" type="hidden" value="{{ next }}">
-    </form>
-    <a href="{% url 'password_reset' %}">Lost password?</a>
-
+    </div>
 </div>
-
 {% endblock %}

@@ -13,39 +13,41 @@
     <title>HydroHUB</title>
 </head>
 
-<body>
+<body class="bg-gradient-primary">
 
-<!-- Head -->
-<div>
-    <!-- Brand -->
-    <nav class="navbar border-bottom">
-        <a class="navbar-brand" href="{% url 'index' %}">
-            <div class="navbar-brand-icon">
-                <img src="{% static 'web/img/logo.png' %}" height="75px">
-            </div>
-        </a>
-        <div id="user-tools">
-            <div class="dropdown">
-                <a id="user-dropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown"
-                   aria-haspopup="true" aria-expanded="false">{{ request.user }}</a>
-                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="user-dropdown">
-                    <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
-                </div>
-            </div>
-        </div>
-
-    </nav>
-</div>
 <!-- Page Wrapper -->
 <div id="wrapper">
 
     <!-- Sidebar -->
-    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+    <ul class="navbar-nav bg-white sidebar sidebar-light accordion border-right" id="accordionSidebar">
+
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{% url 'index' %}">
+            <div class="sidebar-brand-icon">
+                <img src="{% static 'web/img/logo.png' %}" class="img-fluid">
+            </div>
+        </a>
 
         <!-- Sidebar Toggler (Sidebar) -->
         <div class="text-center d-none d-md-inline">
             <button class="rounded-circle border-0" id="sidebarToggle"></button>
         </div>
+
+        <!-- Divider -->
+        <hr class="sidebar-divider my-0">
+
+        <!-- Nav Item - Profile -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapse-profile" aria-expanded="true" aria-controls="collapse-profile">
+                <i class="fas fa-fw fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <div id="collapse-profile" class="collapse" aria-labelledby="heading-profile" data-parent="#accordionSidebar">
+                <div class="bg-light py-2 collapse-inner rounded">
+                    <h6 class="collapse-header">{{ request.user }}</h6>
+                    <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+                </div>
+            </div>
+        </li>
 
         <!-- Divider -->
         <hr class="sidebar-divider my-0">
@@ -75,24 +77,26 @@
 
     <!-- Cards Content -->
     {% block content %}
-    <div class="card-columns">
-        {% for project in dash %}
-        <!-- Card -->
-        <div class="card">
-            <!-- Card Body -->
-            <div class="card-body">
-                <h5 class="card-title">{{ project.name }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">{{ project.owner }}</h6>
-                <p class="card-text">{{ project.describe }}</p>
-                <div class="card-footer bg-light border-dark">
-                    <center>
-                        <a href="update/{{project.id}}" class="btn btn-warning" id='{{project.id}}'>Edit</a>
-                        <a href="delete/{{project.id}}" class="btn btn-danger" id='{{project.id}}'>Delete</a>
-                    </center>
+    <div class="container-fluid">
+        <h1 class="text-white" style="margin-top: 50px;">Your Projects</h1>
+        <div class="row row-cols-4 row-cols-md-2">
+            {% for project in dash %}
+            <!-- Card -->
+            <div class="card" id="card-project">
+                <!-- Card Body -->
+                <div class="card-body">
+                    <h5 class="card-title">{{ project.name }}</h5>
+                    <p class="card-text">{{ project.description }}</p>
+                    <div class="card-footer bg-light border-dark align-bottom">
+                        <div style="text-align: center;">
+                            <a href="update/{{project.id}}" class="btn btn-warning" id='{{project.id}}' style="width: 40%">Edit</a>
+                            <a href="delete/{{project.id}}" class="btn btn-danger" id='{{project.id}}' style="width: 40%">Delete</a>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% endblock %}
     <!-- End of Cards Content -->
