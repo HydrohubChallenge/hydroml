@@ -1,5 +1,6 @@
 from django import forms
 from .models import Project
+from .widgets import BinaryFileInput
 
 class ProjectCreate(forms.ModelForm):
     class Meta:
@@ -7,4 +8,9 @@ class ProjectCreate(forms.ModelForm):
         fields = [
             'name',
             'description',
+            'dataset',
         ]
+        widgets = {
+            'dataset': BinaryFileInput(),
+        }
+

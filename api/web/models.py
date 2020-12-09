@@ -32,6 +32,12 @@ class Project(BaseModel):
         default='New Project',
     )
 
+    dataset = models.BinaryField(
+        blank=True,
+        null=True,
+        editable=True,
+    )
+
     def __str__(self):
         return self.name
 
@@ -39,7 +45,7 @@ class Project(BaseModel):
 class Label(BaseModel):
     project_id = models.ForeignKey(
         Project,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
     )
 
     name = models.CharField(
