@@ -2,6 +2,11 @@ from django.conf import settings
 from django.db import models
 
 
+def user_directory_path(instance, filename):
+    # File will be uploaded to MEDIA_ROOT/datasets/user_<id>/filename
+    return 'datasets/user_{0}/{1}'.format(instance.owner_id, filename)
+
+
 class BaseModel(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -32,18 +37,28 @@ class Project(BaseModel):
         default='New Project',
     )
 
+    # Dataset as blob. Future implementation, if needed.
+    """
     dataset = models.BinaryField(
         blank=True,
         null=True,
         editable=True,
     )
+    """
+
+    # Dataset as File.
+    dataset = models.FileField(
+        null=True,
+        upload_to=user_directory_path,
+    )
+
 
     def __str__(self):
         return self.name
 
 
 class Label(BaseModel):
-    project_id = models.ForeignKey(
+    project = models.ForeignKey(
         Project,
         on_delete=models.DO_NOTHING,
     )
