@@ -1,0 +1,8 @@
+{% extends 'web/dashboard.html' %}
+{% block content %}
+<div class="container bg-white rounded" style="text-align: left;min-height: 40rem;margin: 50px">
+    <h2>{{project}}</h2>
+    {{loaded_data | safe}}
+
+</div>
+{% endblock %}

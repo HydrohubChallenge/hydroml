@@ -4,6 +4,7 @@
         <h1>Project</h1>
         <form method='POST' enctype="multipart/form-data">
             {% csrf_token %}
+            {{ form.errors }}
             <table class="w-50 table table-light">
                 {% for field in create_form %}
                 <tr>

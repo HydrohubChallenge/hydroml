@@ -1,12 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.conf import settings
 from .forms import ProjectCreate
 from .models import Project
 
-import os
+import os, io, csv
 import pandas as pd
 
 @login_required
@@ -28,11 +28,24 @@ def create(request):
             obj.save()
             return redirect("index")
         else:
-            return HttpResponse(
-                """There is a problem in your form, reload the page <a href = "{{ url : 'index'}}">here</a>"""
-            )
+            content = {'form': create, "create_form": create}
+            return render(request, "web/create_form.html", content)
     else:
         return render(request, "web/create_form.html", {"create_form": create})
+
+
+def open_project(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+        csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
+        file = open(csv_file, 'r')
+        df = pd.read_csv(file, nrows=100)
+        data_html = df.to_html()
+        context = {'loaded_data': data_html, 'project': project_sel.name}
+    except Project.DoesNotExist:
+        return redirect("index")
+    return render(request, "web/project_view.html", context)
 
 
 @login_required
@@ -40,13 +53,6 @@ def update_project(request, project_id):
     project_id = int(project_id)
     try:
         project_sel = Project.objects.get(id=project_id)
-        # csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
-        # data = pd.read_csv(csv_file).strip()
-        # dict = data.to_html()
-        # print(csv_filename)
-        # dataset = pd.read_csv(csv_filename)
-        # data_html = dataset.to_html()
-        # context = {'loaded_data': data_html}
     except Project.DoesNotExist:
         return redirect("index")
     project_form = ProjectCreate(request.POST or request.FILES or None, instance=project_sel)
