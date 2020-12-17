@@ -38,9 +38,10 @@ def open_project(request, project_id):
     project_id = int(project_id)
     try:
         project_sel = Project.objects.get(id=project_id)
+        csv_delimiter = project_sel.delimiter
         csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
         file = open(csv_file, 'r')
-        df = pd.read_csv(file, nrows=100)
+        df = pd.read_csv(file, nrows=100, delimiter=csv_delimiter)
         data_html = df.to_html()
         context = {'loaded_data': data_html, 'project': project_sel.name}
     except Project.DoesNotExist:

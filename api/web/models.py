@@ -52,6 +52,11 @@ class Project(BaseModel):
         upload_to=user_directory_path,
     )
 
+    delimiter = models.CharField(
+        max_length=3,
+        default=',',
+    )
+
 
     def __str__(self):
         return self.name

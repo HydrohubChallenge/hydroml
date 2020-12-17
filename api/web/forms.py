@@ -1,24 +1,54 @@
 from django import forms
 from .models import Project
 
-import csv, io
-
 class ProjectCreate(forms.ModelForm):
 
-    def clean_dataset(self):
-        csv_pattern = ['datetime','measured','station_id','variable_id','updated_at']
+    class Meta:
+        model = Project
+        OPTIONS = (
+            (',','Comma'),
+            (';','Dot-Comma'),
+            ('\t','Tab'),
+            (' ','Space'),
+        )
+        fields = [
+            'name',
+            'description',
+            'delimiter',
+            'dataset',
+        ]
+        widgets = {
+            'delimiter': forms.Select(choices=OPTIONS, attrs={'class': 'form-control'}),
+        }
 
-        uploaded_dataset = self.cleaned_data['dataset']
+
+    def clean_dataset(self):
+        csv_pattern = [
+            'datetime',
+            'station',
+            'variable',
+            'measurement',
+            'quality'
+        ]
+
+        uploaded_dataset = self.cleaned_data["dataset"]
+        delimiter = self.cleaned_data.get("delimiter")
 
         if uploaded_dataset:
             filename = uploaded_dataset.name
             if filename.endswith('.csv'):
                 reader = uploaded_dataset.readline().decode("utf-8").splitlines()
-                headers = reader[0].split(',')
+                headers = reader[0].split(delimiter)
+
+                if len(headers) == 1:
+                    raise forms.ValidationError(
+                        'Wrong delimiter for the uploaded file.'
+                    )
+
                 for key in csv_pattern:
                     if key not in headers:
                         raise forms.ValidationError(
-                            'CSV file must have the following columns: {0}'.format(csv_pattern)
+                            'CSV file must have the following columns: {0}.'.format(csv_pattern)
                         )
 
                 return uploaded_dataset
@@ -27,15 +57,6 @@ class ProjectCreate(forms.ModelForm):
                     "Please upload a .csv extension file only"
                 )
         return uploaded_dataset
-
-
-    class Meta:
-        model = Project
-        fields = [
-            'name',
-            'description',
-            'dataset',
-        ]
 
 
 
