@@ -41,7 +41,8 @@ RUN pip install \
     h5py \
     cmocean \
     pendulum \
-    iso8601
+    iso8601 \
+    plotly dash_table dash jupyter_dash dash_extensions
 
 RUN fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
