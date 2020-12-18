@@ -40,7 +40,7 @@ class ProjectCreate(forms.ModelForm):
                 reader = uploaded_dataset.readline().decode("utf-8").splitlines()
                 headers = reader[0].split(delimiter)
 
-                if len(headers) == 1:
+                if len(headers) <= 1:
                     raise forms.ValidationError(
                         'Wrong delimiter for the uploaded file.'
                     )
@@ -57,8 +57,3 @@ class ProjectCreate(forms.ModelForm):
                     "Please upload a .csv extension file only"
                 )
         return uploaded_dataset
-
-
-
-
-
