@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{% static 'web/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web/fa/css/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web/css/custom.stylesheet.css' %}">
+    <title>HydroHUB</title>
+</head>
+
+<body class="bg-gradient-primary">
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+
+    <!-- Sidebar -->
+    <ul class="navbar-nav bg-white sidebar sidebar-light accordion border-right" id="accordionSidebar">
+
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{% url 'index' %}">
+            <div class="sidebar-brand-icon">
+                <img src="{% static 'web/img/logo.png' %}" class="img-fluid">
+            </div>
+        </a>
+
+        <!-- Sidebar Toggler (Sidebar) -->
+        <div class="text-center d-none d-md-inline">
+            <button class="rounded-circle border-0" id="sidebarToggle"></button>
+        </div>
+
+        <!-- Divider -->
+        <hr class="sidebar-divider my-0">
+
+        <!-- Nav Item - Profile -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapse-profile" aria-expanded="true" aria-controls="collapse-profile">
+                <i class="fas fa-fw fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <div id="collapse-profile" class="collapse" aria-labelledby="heading-profile" data-parent="#accordionSidebar">
+                <div class="bg-light py-2 collapse-inner rounded">
+                    <h6 class="collapse-header">{{ request.user }}</h6>
+                    <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+                </div>
+            </div>
+        </li>
+
+        <!-- Nav Item - Projects -->
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'index' %}">
+                <i class="fas fa-fw fa-list"></i>
+                <span>Projects</span></a>
+        </li>
+
+        <!-- Divider -->
+        <hr class="sidebar-divider my-0">
+
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Cards Content -->
+    {% block content %}
+    <div class="container-fluid">
+        <h1 class="text-white" style="margin-top: 50px;">Your Projects</h1>
+        <a class="btn btn-outline-light" href="{% url 'create-project' %}">
+            <i class="fas fa-fw fa-plus"></i>
+            <span>New Project</span>
+        </a>
+        <div class="row row-cols-4 row-cols-md-2">
+            {% for project in dash %}
+            <!-- Card -->
+            <div class="card" id="card-project">
+                <!-- Card Body -->
+                <div class="card-body">
+                    <h5 class="card-title"><a class="text-secondary" href="project/{{project.id}}">{{ project.name }}</a></h5>
+                    <p class="card-text">{{ project.description }}</p>
+                    <div class="card-footer bg-light border-dark align-bottom">
+                        <div style="text-align: center;">
+                            <a href="update/{{project.id}}" class="btn btn-warning" id='{{project.id}}' style="width: 40%">Edit</a>
+                            <a href="delete/{{project.id}}" class="btn btn-danger" id='{{project.id}}' style="width: 40%">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endblock %}
+    <!-- End of Cards Content -->
+
+</div>
+
+
+<script src="{% static 'web/js/jquery.min.js' %}"></script>
+<script src="{% static 'web/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'web/js/custom.script.js' %}"></script>
+
+</body>
+
+</html>
