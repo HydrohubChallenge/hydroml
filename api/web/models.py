@@ -1,5 +1,9 @@
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+
+import pandas as pd
+import os
 
 
 def user_directory_path(instance, filename):
@@ -38,13 +42,11 @@ class Project(BaseModel):
     )
 
     # Dataset as blob. Future implementation, if needed.
-    """
-    dataset = models.BinaryField(
-        blank=True,
-        null=True,
-        editable=True,
-    )
-    """
+    # dataset = models.BinaryField(
+    #     blank=True,
+    #     null=True,
+    #     editable=True,
+    # )
 
     # Dataset as File.
     dataset = models.FileField(

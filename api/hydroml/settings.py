@@ -138,14 +138,15 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'root')
 
 STATICFILES_DIRS = ['static']
 
-# MAX_UPLOAD_SIZE = "5242880"
 
 # Media files (Uploaded CSV files)
 
 MEDIA_URL = '/media/'
 
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_ROOT = '../data/'
+MEDIA_ROOT = '../data/media/'
+
+# MAX_UPLOAD_SIZE = "5242880"
+
 
 # Redirect to index after login
 

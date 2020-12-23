@@ -1,5 +1,5 @@
 from django import forms
-from .models import Project
+from .models import Project, Label
 
 class ProjectCreate(forms.ModelForm):
 
@@ -51,9 +51,19 @@ class ProjectCreate(forms.ModelForm):
                             'CSV file must have the following columns: {0}.'.format(csv_pattern)
                         )
 
-                return uploaded_dataset
             else:
                 raise forms.ValidationError(
                     "Please upload a .csv extension file only"
                 )
         return uploaded_dataset
+
+
+class LabelCreate(forms.ModelForm):
+
+    class Meta:
+        model = Label
+        fields = [
+            'name',
+            'description',
+            'color',
+        ]
