@@ -1,4 +1,6 @@
 from django import forms
+from django.utils.translation import ugettext_lazy as _
+
 from .models import Project, Label
 
 class ProjectCreate(forms.ModelForm):
@@ -42,18 +44,18 @@ class ProjectCreate(forms.ModelForm):
 
                 if len(headers) <= 1:
                     raise forms.ValidationError(
-                        'Wrong delimiter for the uploaded file.'
+                        _('Wrong delimiter for the uploaded file.')
                     )
 
                 for key in csv_pattern:
                     if key not in headers:
                         raise forms.ValidationError(
-                            'CSV file must have the following columns: {0}.'.format(csv_pattern)
+                            _('CSV file must have the following columns: {0}.'.format(csv_pattern))
                         )
 
             else:
                 raise forms.ValidationError(
-                    "Please upload a .csv extension file only"
+                    _("Please upload a .csv extension file only")
                 )
         return uploaded_dataset
 

@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.conf import settings
+from django.utils.translation import get_language
 from .forms import ProjectCreate, LabelCreate
 from .models import Project, Label
 
@@ -12,7 +13,9 @@ import pandas as pd
 @login_required
 def index(request):
     dash = Project.objects.filter(owner=request.user)
-    return render(request, "web/dashboard.html", {"dash": dash})
+    current_language = get_language()
+    content = {"dash": dash, "current_language": current_language}
+    return render(request, "web/dashboard.html", content)
 
 
 @login_required
@@ -53,11 +56,11 @@ def open_project(request, project_id):
 
         labels = Label.objects.filter(project=project_id)
 
-        context = {'loaded_data': data_html, 'project': project_sel, 'labels': labels}
+        content = {'loaded_data': data_html, 'project': project_sel, 'labels': labels}
 
     except Project.DoesNotExist:
         return redirect("index")
-    return render(request, "web/project_view.html", context)
+    return render(request, "web/project_view.html", content)
 
 
 @login_required

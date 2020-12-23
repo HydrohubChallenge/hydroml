@@ -16,7 +16,8 @@ RUN apt-get update && \
         wait-for-it \
         binutils \
         libproj-dev \
-        gdal-bin
+        gdal-bin \
+        gettext
 
 RUN addgroup -q django && \
     adduser --quiet --ingroup django --disabled-password django

@@ -1,23 +1,24 @@
 {% extends "base.html" %}
 
 {% load static %}
+{% load i18n %}
 
 {% block content %}
 
 <div class="bg-white rounded" id="login-box">
     <div class="login-area justify-content-center">
         <img alt="Logo" class="login-logo" src="../../static/web/img/logo.png"/>
-        <h3 class="login-text">Login</h3>
+        <h3 class="login-text">{% translate "Login" %}</h3>
         {% if form.errors %}
-        <p>Your username and password didn't match. Please try again.</p>
+        <p>{% translate "LoginError" %}</p>
         {% endif %}
 
         {% if next %}
         {% if user.is_authenticated %}
-        <p>Your account doesn't have access to this page. To proceed,
-            please login with an account that has access.</p>
+        <p>{% blocktranslate %}Your account doesn't have access to this page. To proceed,
+            please login with an account that has access.{% endblocktranslate %}</p>
         {% else %}
-        <p>Please login to see this page.</p>
+        <p>{% translate "LoginMessage" %}</p>
         {% endif %}
         {% endif %}
         <form class="login-input" action="{% url 'login' %}" method="POST">
@@ -33,10 +34,10 @@
                 </tr>
             </table>
 
-            <input class="login-input btn btn-lg btn-primary btn-block" type="submit" value="Enter">
+            <input class="login-input btn btn-lg btn-primary btn-block" type="submit" value="{% translate "EnterButton" %}">
             <input name="next" type="hidden" value="{{ next }}">
         </form>
-        <a href="{% url 'password_reset' %}">Lost password?</a>
+        <a href="{% url 'password_reset' %}">{% translate "LostPass" %}</a>
 
     </div>
 </div>

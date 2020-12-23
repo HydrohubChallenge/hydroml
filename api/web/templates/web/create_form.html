@@ -1,7 +1,11 @@
 {% extends 'web/dashboard.html' %}
+
+{% load i18n %}
+
 {% block content %}
+
     <div style="text-align: left;min-height: 40rem;margin: 50px" class="container bg-white rounded">
-        <h1>Project</h1>
+        <h1>{% translate "Project" %}</h1>
         <form method='POST' enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.errors }}
@@ -13,7 +17,7 @@
                 </tr>
                 {% endfor %}
             </table>
-            <button type="submit" class="btn btn-lg btn-success">Save</button>
+            <button type="submit" class="btn btn-lg btn-success">{% translate "SaveButton" %}</button>
         </form>
     </div>
 {% endblock %}

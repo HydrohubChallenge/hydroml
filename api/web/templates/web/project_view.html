@@ -1,11 +1,14 @@
 {% extends 'web/dashboard.html' %}
+
+{% load i18n %}
+
 {% block content %}
 <div class="container bg-white rounded" style="text-align: left;min-height: 40rem;margin: 50px">
-    <h2 class="text-primary" style="margin: 50px; margin-left: 0px;">Project: {{ project.name }}</h2>
+    <h2 class="text-primary" style="margin: 50px; margin-left: 0px;">{% blocktranslate with p_name=project.name %}Project: {{ p_name }} {% endblocktranslate %}</h2>
 
     <ul class="nav nav-tabs">
-        <li class="nav-item active"><a class="nav-link active text-secondary" data-toggle="tab" href="#data">Data</a></li>
-        <li class="nav-item"><a class="nav-link text-secondary" data-toggle="tab" href="#labels">Labels</a></li>
+        <li class="nav-item active"><a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "DataTab" %}</a></li>
+        <li class="nav-item"><a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "LabelsTab" %}</a></li>
     </ul>
 
     <div class="tab-content">
@@ -17,7 +20,7 @@
         <div id="labels" class="tab-pane">
             <a class="btn btn-outline-primary" style="margin: 10px; margin-left: 0px;" href="{{ project.id }}/create_label/">
                 <i class="fas fa-fw fa-plus"></i>
-                <span>New Label</span>
+                <span>{% translate "NewLabel" %}</span>-
             </a>
 
             <!-- Table -->
@@ -28,10 +31,10 @@
                         <td>{{ label.description }}</td>
                         <td>{{ label.color }}</td>
                         <td>
-                            <a href="{{ project.id }}/update/{{label.id}}" class="btn btn-sm btn-warning" id='{{label.id}}' style="width: 40%">Edit</a>
+                            <a href="{{ project.id }}/update/{{label.id}}" class="btn btn-sm btn-warning" id='{{label.id}}' style="width: 40%">{% translate "EditButton" %}</a>
                         </td>
                         <td>
-                            <a href="{{ project.id }}/delete/{{label.id}}" class="btn btn-sm btn-danger" id='{{label.id}}' style="width: 40%">Delete</a>
+                            <a href="{{ project.id }}/delete/{{label.id}}" class="btn btn-sm btn-danger" id='{{label.id}}' style="width: 40%">{% translate "DeleteButton" %}</a>
                         </td>
                     </tr>
                 {% endfor %}
