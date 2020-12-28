@@ -42,7 +42,8 @@ RUN pip install \
     cmocean \
     pendulum \
     iso8601 \
-    plotly dash_table dash jupyter_dash dash_extensions
+    dash_table dash jupyter_dash dash_extensions \
+    chart-studio plotly plotly-geo
 
 RUN fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
