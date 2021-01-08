@@ -12,7 +12,7 @@ import pandas as pd
 
 @login_required
 def index(request):
-    dash = Project.objects.filter(owner=request.user)
+    dash = Project.objects.filter(owner=request.user).order_by('created_at')
     current_language = get_language()
     content = {"dash": dash, "current_language": current_language}
     return render(request, "web/dashboard.html", content)
@@ -35,7 +35,7 @@ def create(request):
             content = {'form': create, "create_form": create}
             return render(request, "web/create_form.html", content)
     else:
-        return render(request, "web/create_form.html", {"create_form": create})
+        return render(request, "web/create_form.html", {"create_form": create, "method": 'create'})
 
 
 def open_project(request, project_id):
@@ -85,7 +85,27 @@ def update_project(request, project_id):
     else:
         project_form = ProjectCreate(instance=project_sel)
 
-    return render(request, "web/create_form.html", {"create_form": project_form})
+    return render(request, "web/create_form.html", {"create_form": project_form, "method": 'update'})
+
+
+@login_required
+def clone_project(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+        labels_sel = Label.objects.filter(project_id=project_id)
+    except Project.DoesNotExist:
+        return redirect("index")
+    project_sel.pk = None
+    new_name = project_sel.name + " (copy)"
+    project_sel.name = new_name
+    project_sel.save()
+    for label in labels_sel:
+        label.pk = None
+        label.project_id = project_sel.id
+        label.save()
+
+    return redirect("index")
 
 
 @login_required
@@ -93,8 +113,11 @@ def delete_project(request, project_id):
     project_id = int(project_id)
     try:
         project_sel = Project.objects.get(id=project_id)
+        labels_sel = Label.objects.filter(project_id=project_id)
     except Project.DoesNotExist:
         return redirect("index")
+    for label in labels_sel:
+        label.delete()
     project_sel.delete()
     return redirect("index")
 
@@ -113,7 +136,7 @@ def create_label(request, project_id):
             content = {'form': create, "create_label": create}
             return render(request, "web/create_label.html", content)
     else:
-        return render(request, "web/create_label.html", {"create_label": create})
+        return render(request, "web/create_label.html", {"create_label": create, "method": 'create', "project": Project.objects.get(id=project_id)})
 
 
 @login_required
@@ -134,7 +157,21 @@ def update_label(request, project_id, label_id):
     else:
         label_form = LabelCreate(instance=label_sel)
 
-    return render(request, "web/create_label.html", {"create_label": label_form})
+    return render(request, "web/create_label.html", {"create_label": label_form, "method": 'update', "project": Project.objects.get(id=project_id)})
+
+
+@login_required
+def clone_label(request, project_id, label_id):
+    label_id = int(label_id)
+    try:
+        label_sel = Label.objects.get(id=label_id)
+    except Label.DoesNotExist:
+        return redirect('open-project', project_id=project_id)
+    label_sel.pk = None
+    new_name = label_sel.name + " (copy)"
+    label_sel.name = new_name
+    label_sel.save()
+    return redirect('open-project', project_id=project_id)
 
 
 @login_required

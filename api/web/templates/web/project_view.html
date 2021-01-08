@@ -3,45 +3,142 @@
 {% load i18n %}
 
 {% block content %}
-<div class="container bg-white rounded" style="text-align: left;min-height: 40rem;margin: 50px">
-    <h2 class="text-primary" style="margin: 50px; margin-left: 0px;">{% blocktranslate with p_name=project.name %}Project: {{ p_name }} {% endblocktranslate %}</h2>
 
-    <ul class="nav nav-tabs">
-        <li class="nav-item active"><a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "DataTab" %}</a></li>
-        <li class="nav-item"><a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "LabelsTab" %}</a></li>
-    </ul>
-
-    <div class="tab-content">
-        <div id="data" class="tab-pane fade show active">
-            <div style="margin: 10px; margin-left: 0px;">
-                {{loaded_data | safe}}
-            </div>
-        </div>
-        <div id="labels" class="tab-pane">
-            <a class="btn btn-outline-primary" style="margin: 10px; margin-left: 0px;" href="{{ project.id }}/create_label/">
-                <i class="fas fa-fw fa-plus"></i>
-                <span>{% translate "NewLabel" %}</span>-
-            </a>
-
-            <!-- Table -->
-            <table class="table table-hover">
-                {% for label in labels %}
-                    <tr>
-                        <td>{{ label.name }}</td>
-                        <td>{{ label.description }}</td>
-                        <td>{{ label.color }}</td>
-                        <td>
-                            <a href="{{ project.id }}/update/{{label.id}}" class="btn btn-sm btn-warning" id='{{label.id}}' style="width: 40%">{% translate "EditButton" %}</a>
-                        </td>
-                        <td>
-                            <a href="{{ project.id }}/delete/{{label.id}}" class="btn btn-sm btn-danger" id='{{label.id}}' style="width: 40%">{% translate "DeleteButton" %}</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </table>
-        </div>
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">{{ project.name }}</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
+                        <li class="breadcrumb-item active">{{ project.name }}</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
     </div>
+    <!-- /.content-header -->
+    <!-- Main content -->
+    <div class="content">
+        <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem;margin: 10px; padding:10px; margin-left: 0px;">
 
+                <ul class="nav nav-tabs">
+                    <li class="nav-item active">
+                        <a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "Labels" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#models">{% translate "Models" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#metadata">{% translate "Metadata" %}</a>
+                    </li>
+                </ul>
 
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="data">
+                        <div style="margin: 10px; margin-left: 0px;">
+                            {{loaded_data | safe}}
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="labels">
+                        <a class="btn btn-outline-primary" href="{{ project.id }}/create_label/"
+                           style="margin: 10px; margin-left: 0px;">
+                            <i class="fas fa-fw fa-plus"></i>
+                            <span>{% translate "NewLabel" %}</span>
+                        </a>
+
+                        <!-- Table -->
+                        <table class="table table-hover">
+                            {% for label in labels %}
+                            <tr>
+                                <td>{{ label.name }}</td>
+                                <td>{{ label.description }}</td>
+                                <td style="text-align: center;">
+                                    <div class="rounded-circle" style="width: 2rem; height: 2rem; background-color:{{ label.color }};"></div>
+                                </td>
+                                <td>
+                                        <a href="{{ project.id }}/clone/{{label.id}}" id='{{label.id}}'>
+                                        <span class="far fa-clone"></span>
+                                    </a>
+                                </td>
+                                <td>
+                                        <a href="{{ project.id }}/update/{{label.id}}" id='{{label.id}}'>
+                                        <span class="fas fa-pencil-alt"></span>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a type="button" data-toggle="modal" data-target="#confirmDeleteModal" data-message="If you proceed, the label will be deleted."
+                                       href="{{ project.id }}/delete/{{label.id}}" id='deleteButton{{label.id}}'>
+                                       <span style="color: red;" class="fas fa-trash-alt"></span>
+                                    </a>
+
+                                    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                <h5 class="modal-title" id="DeleteConfirmationTitle">Are you sure?</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                  <span aria-hidden="true">&times;</span>
+                                                </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Do you really want to delete these label? This process cannot be undone.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <a type="button" class="btn btn-primary" data-dismiss="modal">Cancel</a>
+                                                    <a type="button" class="btn btn-danger" data-dismiss="modal" id="confirmDeleteButtonModal">Delete</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    <div class="tab-pane fade" id="models">
+                        <div style="margin: 10px; margin-left: 0px;">
+                            <p>Models</p>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade   " id="metadata">
+                        <div style="margin: 10px; margin-left: 0px;">
+                            <p>Metadata</p>
+                        </div>
+                    </div>
+                </div>
+
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content -->
 </div>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        var buttons = document.querySelectorAll("[data-target='#confirmDeleteModal']");
+        for (const button of buttons) {
+            button.addEventListener("click", function(event) {
+                // find the modal and add the caller-id as an attribute
+                var modal = document.getElementById("confirmDeleteModal");
+                modal.setAttribute("caller-id", this.getAttribute("id"));
+            })
+        }
+
+        document.getElementById("confirmDeleteButtonModal").onclick = () => {
+            // when the Confirm Button in the modal is clicked
+            var button_clicked = event.target
+            var caller_id = button_clicked.closest("#confirmDeleteModal").getAttribute("caller-id");
+            var caller = document.getElementById(caller_id);
+            // open the url that was specified for the caller
+            window.location = caller.getAttribute("href");
+        };
+    });
+</script>
 {% endblock %}

@@ -14,7 +14,6 @@
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="#">Home</a></li>
                         <li class="breadcrumb-item active">Projects</li>
                     </ol>
                 </div><!-- /.col -->
@@ -34,7 +33,7 @@
                 <div class="row row-cols-4 row-cols-md-2">
                     {% for project in dash %}
                     <!-- Card -->
-                    <div class="card" style="margin: 10px; margin-left: 0; padding: 1px; max-width: 300px;">
+                    <div class="card" style="margin: 10px; margin-left: 0; padding: 1px; max-width: 300px; min-width: 200px;">
                         <!-- Card Body -->
                         <div class="card-body">
                             <div class="row mb-2">
@@ -42,7 +41,7 @@
                                     <h5 class="card-title"><a class="text-secondary" style="font-size: 150%;" href="project/{{project.id}}">{{ project.name }}</a></h5>
                                 </div>
                                 <div class="col-sm-2">
-                                    <a href="#" id='{{project.id}}'>
+                                    <a href="clone/{{project.id}}" id='{{project.id}}'>
                                         <span class="far fa-clone"></span>
                                     </a>
                                 </div>
@@ -52,9 +51,31 @@
                                     </a>
                                 </div>
                                 <div class="col-sm-2">
-                                    <a href="delete/{{project.id}}" id='{{project.id}}'>
+                                    <a type="button" data-toggle="modal" data-target="#confirmDeleteModal" data-message="If you proceed, the project will be deleted."
+                                       id='deleteButton{{project.id}}' href="{% url 'delete-project' project.id %}">
                                        <span style="color: red;" class="fas fa-trash-alt"></span>
                                     </a>
+
+                                    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                <h5 class="modal-title" id="DeleteConfirmationTitle">Are you sure?</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                  <span aria-hidden="true">&times;</span>
+                                                </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Do you really want to delete these project? This process cannot be undone.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <a type="button" class="btn btn-primary" data-dismiss="modal">Cancel</a>
+                                                    <a type="button" class="btn btn-danger" data-dismiss="modal" id="confirmDeleteButtonModal">Delete</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                             <p class="card-text"><small><strong>Created:</strong></small> {{project.created_at}}</p>
@@ -73,4 +94,26 @@
     <!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        var buttons = document.querySelectorAll("[data-target='#confirmDeleteModal']");
+        for (const button of buttons) {
+            button.addEventListener("click", function(event) {
+                // find the modal and add the caller-id as an attribute
+                var modal = document.getElementById("confirmDeleteModal");
+                modal.setAttribute("caller-id", this.getAttribute("id"));
+            })
+        }
+
+        document.getElementById("confirmDeleteButtonModal").onclick = () => {
+            // when the Confirm Button in the modal is clicked
+            var button_clicked = event.target
+            var caller_id = button_clicked.closest("#confirmDeleteModal").getAttribute("caller-id");
+            var caller = document.getElementById(caller_id);
+            // open the url that was specified for the caller
+            window.location = caller.getAttribute("href");
+        };
+    });
+</script>
 {% endblock %}

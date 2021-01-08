@@ -69,3 +69,6 @@ class LabelCreate(forms.ModelForm):
             'description',
             'color',
         ]
+        widgets = {
+            'color': forms.TextInput(attrs={'type': 'color'}),
+        }
