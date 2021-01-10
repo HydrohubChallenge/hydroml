@@ -12,7 +12,8 @@ RUN apt-get update && \
         cdo \
         libgdal-dev \
         gdal-bin \
-        ffmpeg
+        ffmpeg \
+        graphviz
 
 USER jovyan
 
