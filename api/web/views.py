@@ -52,11 +52,11 @@ def open_project(request, project_id):
             df.to_csv(csv_file, sep=csv_delimiter, index=False)
 
 
-        data_html = df.to_html()
+        data = df.to_numpy()
 
         labels = Label.objects.filter(project=project_id)
 
-        content = {'loaded_data': data_html, 'project': project_sel, 'labels': labels}
+        content = {'loaded_data': df, 'project': project_sel, 'labels': labels}
 
     except Project.DoesNotExist:
         return redirect("index")

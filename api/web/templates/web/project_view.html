@@ -43,9 +43,7 @@
 
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="data">
-                        <div style="margin: 10px; margin-left: 0px;">
-                            {{loaded_data | safe}}
-                        </div>
+                        <div style="margin: 10px; margin-left: 0px;" id="data-table"></div>
                     </div>
                     <div class="tab-pane fade" id="labels">
                         <a class="btn btn-outline-primary" href="{{ project.id }}/create_label/"
@@ -120,7 +118,29 @@
     <!-- /.content -->
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/handsontable@8.2.0/dist/handsontable.full.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/handsontable@8.2.0/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
+
 <script type="text/javascript">
+
+
+    var data = [
+      ['', 'Ford', 'Tesla', 'Toyota', 'Honda'],
+      ['2017', 10, 11, 12, 13],
+      ['2018', 20, 11, 14, 13],
+      ['2019', 30, 15, 12, 13]
+    ];
+
+    var container = document.getElementById('data-table');
+    var hot = new Handsontable(container, {
+        data: data,
+        rowHeaders: true,
+        colHeaders: true,
+        filters: true,
+        dropdownMenu: true,
+        licenseKey: 'non-commercial-and-evaluation',
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         var buttons = document.querySelectorAll("[data-target='#confirmDeleteModal']");
         for (const button of buttons) {
