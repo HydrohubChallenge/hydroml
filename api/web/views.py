@@ -6,9 +6,11 @@ from django.conf import settings
 from django.utils.translation import get_language
 from .forms import ProjectCreate, LabelCreate
 from .models import Project, Label
+import json
 
 import os, io, csv
 import pandas as pd
+
 
 @login_required
 def index(request):
@@ -51,12 +53,21 @@ def open_project(request, project_id):
             df["label"] = ""
             df.to_csv(csv_file, sep=csv_delimiter, index=False)
 
+        data = df.values.tolist()
+        columns = df.columns.values.tolist()
 
-        data = df.to_numpy()
+        # data = [['', 'Ford', 'Tesla', 'Toyota', 'Honda'],
+        #         ['2017', 10, 11, 12, 13],
+        #         ['2018', 20, 11, 14, 13],
+        #         ['2019', 30, 15, 12, 13]
+        #         ];
+
+        data = json.dumps(data)
+        columns = json.dumps(columns)
 
         labels = Label.objects.filter(project=project_id)
 
-        content = {'loaded_data': df, 'project': project_sel, 'labels': labels}
+        content = {'loaded_data': data,'columns': columns, 'project': project_sel, 'labels': labels}
 
     except Project.DoesNotExist:
         return redirect("index")
@@ -70,7 +81,7 @@ def update_project(request, project_id):
         project_sel = Project.objects.get(id=project_id)
     except Project.DoesNotExist:
         return redirect("index")
-    if request.method =='POST':
+    if request.method == 'POST':
         project_form = ProjectCreate(request.POST, request.FILES, instance=project_sel)
 
         if project_form.is_valid():
@@ -136,7 +147,8 @@ def create_label(request, project_id):
             content = {'form': create, "create_label": create}
             return render(request, "web/create_label.html", content)
     else:
-        return render(request, "web/create_label.html", {"create_label": create, "method": 'create', "project": Project.objects.get(id=project_id)})
+        return render(request, "web/create_label.html",
+                      {"create_label": create, "method": 'create', "project": Project.objects.get(id=project_id)})
 
 
 @login_required
@@ -146,7 +158,7 @@ def update_label(request, project_id, label_id):
         label_sel = Label.objects.get(id=label_id)
     except Label.DoesNotExist:
         return redirect('open-project', project_id=project_id)
-    if request.method =='POST':
+    if request.method == 'POST':
         label_form = LabelCreate(request.POST, instance=label_sel)
 
         if label_form.is_valid():
@@ -157,7 +169,8 @@ def update_label(request, project_id, label_id):
     else:
         label_form = LabelCreate(instance=label_sel)
 
-    return render(request, "web/create_label.html", {"create_label": label_form, "method": 'update', "project": Project.objects.get(id=project_id)})
+    return render(request, "web/create_label.html",
+                  {"create_label": label_form, "method": 'update', "project": Project.objects.get(id=project_id)})
 
 
 @login_required
