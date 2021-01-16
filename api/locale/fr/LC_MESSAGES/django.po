@@ -1,0 +1,143 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-12-23 18:43+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: hydroml/settings.py:138
+msgid "English"
+msgstr "Anglais"
+
+#: hydroml/settings.py:139
+msgid "Portuguese"
+msgstr "Portugais"
+
+#: hydroml/settings.py:140
+msgid "Spanish"
+msgstr "Espagnol"
+
+#: hydroml/settings.py:141
+msgid "French"
+msgstr "Français"
+
+#: templates/registration/logged_out.html:7
+msgid "LoggedOut"
+msgstr "Déconnecté"
+
+#: templates/registration/logged_out.html:8
+msgid "LoginLink"
+msgstr "Cliquez ici pour vous identifier."
+
+#: templates/registration/login.html:11
+msgid "Login"
+msgstr "Login"
+
+#: templates/registration/login.html:13
+msgid "LoginError"
+msgstr "Votre nom d'utilisateur et/ou votre mot de passe ne correspondent pas. Veuillez réessayer."
+
+#: templates/registration/login.html:18
+msgid ""
+"Your account doesn't have access to this page. To proceed,\n"
+"            please login with an account that has access."
+msgstr ""
+"Votre compte n'a pas accès à cette page. Pour continuer,\n"
+"            veuillez vous connecter avec un compte qui y a accès."
+
+#: templates/registration/login.html:21
+msgid "LoginMessage"
+msgstr "Veuillez vous connecter pour voir cette page."
+
+#: templates/registration/login.html:37
+#, fuzzy
+#| msgid "EditButton"
+msgid "EnterButton"
+msgstr "Entrer"
+
+#: templates/registration/login.html:40
+msgid "LostPass"
+msgstr "Mot de passe perdu?"
+
+#: web/forms.py:47
+msgid "Wrong delimiter for the uploaded file."
+msgstr "Mauvais délimiteur pour le fichier téléchargé."
+
+#: web/forms.py:53
+#, python-brace-format
+msgid "CSV file must have the following columns: {0}."
+msgstr "Le fichier CSV doit avoir les colonnes suivantes: {0}."
+
+#: web/forms.py:58
+msgid "Please upload a .csv extension file only"
+msgstr "Veuillez télécharger uniquement un fichier d'extension .csv."
+
+#: web/templates/web/create_form.html:8
+msgid "Project"
+msgstr "Projet"
+
+#: web/templates/web/create_form.html:20 web/templates/web/create_label.html:20
+msgid "SaveButton"
+msgstr "Enregistrer"
+
+#: web/templates/web/create_label.html:8
+msgid "Label"
+msgstr "Étiquette"
+
+#: web/templates/web/dashboard.html:43
+msgid "Profile"
+msgstr "Profil"
+
+#: web/templates/web/dashboard.html:50
+msgid "Logout"
+msgstr "Déconnecter"
+
+#: web/templates/web/dashboard.html:59
+msgid "Projects"
+msgstr "Projets"
+
+#: web/templates/web/dashboard.html:73
+msgid "YourProjects"
+msgstr "Tes Projets"
+
+#: web/templates/web/dashboard.html:76
+msgid "NewProject"
+msgstr "Nouveau Projet"
+
+#: web/templates/web/dashboard.html:89 web/templates/web/project_view.html:34
+msgid "EditButton"
+msgstr "Éditer"
+
+#: web/templates/web/dashboard.html:90 web/templates/web/project_view.html:37
+msgid "DeleteButton"
+msgstr "Effacer"
+
+#: web/templates/web/project_view.html:7
+#, python-format
+msgid "Project: %(p_name)s "
+msgstr "Projet: %(p_name)s "
+
+#: web/templates/web/project_view.html:10
+msgid "DataTab"
+msgstr "Les Données"
+
+#: web/templates/web/project_view.html:11
+msgid "LabelsTab"
+msgstr "Étiquettes"
+
+#: web/templates/web/project_view.html:23
+msgid "NewLabel"
+msgstr "Nouvelle Étiquette"

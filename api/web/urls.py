@@ -20,6 +20,11 @@ urlpatterns = [
     path('', views.index, name = 'index'),
     path('create/', views.create, name='create-project'),
     path('update/<int:project_id>', views.update_project),
-    path('delete/<int:project_id>', views.delete_project),
-    path('project/<int:project_id>', views.open_project),
+    path('clone/<int:project_id>', views.clone_project),
+    path('delete/<int:project_id>', views.delete_project, name='delete-project'),
+    path('project/<int:project_id>', views.open_project, name='open-project'),
+    path('project/<int:project_id>/create_label/', views.create_label),
+    path('project/<int:project_id>/update/<int:label_id>', views.update_label),
+    path('project/<int:project_id>/clone/<int:label_id>', views.clone_label),
+    path('project/<int:project_id>/delete/<int:label_id>', views.delete_label),
 ]
