@@ -89,6 +89,19 @@ p {
   margin-bottom: 1rem;
 }
 
+.pagination-table {
+  padding: 10px 0;
+  display: inline-block;
+}
+.pagination-table a {
+  border: 1px solid grey;
+  padding: 2px 5px;
+  background-color: #4CAF50;
+  color: white;
+}
+
+.pagination-table a:hover:not(.active) {background-color: #ddd;}
+
 abbr[title],
 abbr[data-original-title] {
   text-decoration: underline;

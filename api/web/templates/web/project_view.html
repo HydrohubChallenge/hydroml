@@ -44,6 +44,11 @@
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="data">
                         <div style="margin: 10px; margin-left: 0px;" id="data-table"></div>
+                        <!-- <div class="pagination-table" style="margin: 10px; margin-left: 0px;" id="pagination">
+                            {% for p in n_pages %}
+                                <a href="#{{ p }}">{{ p }}</a>
+                            {% endfor %}
+                        </div> -->
                     </div>
                     <div class="tab-pane fade" id="labels">
                         <a class="btn btn-outline-primary" href="{{ project.id }}/create_label/"
@@ -103,7 +108,7 @@
                     </div>
                     <div class="tab-pane fade" id="models">
                         <div style="margin: 10px; margin-left: 0px;">
-                            <p>Models</p>
+                            <button type="button" class="btn btn-lg btn-success">Train Model</button>
                         </div>
                     </div>
                     <div class="tab-pane fade   " id="metadata">
@@ -122,15 +127,38 @@
 <link href="https://cdn.jsdelivr.net/npm/handsontable@8.2.0/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
 
 <script type="text/javascript">
+     //var getData = (function () {
+       //var data = JSON.parse("{{loaded_data|escapejs}}");
+
+        //return function () {
+          //var page  = parseInt(window.location.hash.replace('#', ''), 10) || 1,
+            //limit = 100,
+            //row   = (page - 1) * limit,
+            //count = page * limit,
+            //part  = [];
+
+          //for (;row < count;row++) {
+            //part.push(data[row]);
+          //}
+
+          //return part;
+        //}
+     //})();
+
     var data = JSON.parse("{{loaded_data|escapejs}}");
+
     var container = document.getElementById('data-table');
     var hot = new Handsontable(container, {
+        //data: getData(),
         data: data,
         colHeaders: JSON.parse("{{columns|escapejs}}"),
         rowHeaders: true,
         filters: true,
         dropdownMenu: true,
         licenseKey: 'non-commercial-and-evaluation',
+    });
+    Handsontable.dom.addEvent(window, 'hashchange', function (event) {
+        hot.loadData(getData());
     });
 
     document.addEventListener('DOMContentLoaded', () => {
