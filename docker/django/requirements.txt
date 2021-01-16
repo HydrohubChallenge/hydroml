@@ -63,3 +63,5 @@ wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1
 xarray==0.16.1
+celery==5.0.5
+redis==3.5.3

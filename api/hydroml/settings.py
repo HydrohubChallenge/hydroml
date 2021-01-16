@@ -122,6 +122,8 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
+CELERY_TIMEZONE = 'UTC'
+
 USE_I18N = True
 
 USE_L10N = True
@@ -152,3 +154,5 @@ MEDIA_ROOT = '../data/'
 LOGIN_REDIRECT_URL = 'index'
 
 LOGOUT_REDIRECT_URL = 'login'
+
+CELERY_BROKER_URL = 'redis://redis'
