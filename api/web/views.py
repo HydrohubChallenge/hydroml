@@ -47,27 +47,23 @@ def open_project(request, project_id):
         csv_delimiter = project_sel.delimiter
         csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
         file = open(csv_file, 'r')
-        df = pd.read_csv(file, nrows=100, delimiter=csv_delimiter)
+        df = pd.read_csv(file, delimiter=csv_delimiter)
 
         if not 'label' in df.columns:
-            df["label"] = ""
+            df["label"] = " "
             df.to_csv(csv_file, sep=csv_delimiter, index=False)
 
+        df.fillna(0)
         data = df.values.tolist()
         columns = df.columns.values.tolist()
-
-        # data = [['', 'Ford', 'Tesla', 'Toyota', 'Honda'],
-        #         ['2017', 10, 11, 12, 13],
-        #         ['2018', 20, 11, 14, 13],
-        #         ['2019', 30, 15, 12, 13]
-        #         ];
+        pages = round(len(df.index)/100)
 
         data = json.dumps(data)
         columns = json.dumps(columns)
 
         labels = Label.objects.filter(project=project_id)
 
-        content = {'loaded_data': data,'columns': columns, 'project': project_sel, 'labels': labels}
+        content = {'loaded_data': data,'columns': columns, 'n_pages': range(1, pages+1), 'project': project_sel, 'labels': labels}
 
     except Project.DoesNotExist:
         return redirect("index")
@@ -84,7 +80,7 @@ def update_project(request, project_id):
     if request.method == 'POST':
         project_form = ProjectCreate(request.POST, request.FILES, instance=project_sel)
 
-        if project_form.is_valid():
+        if project_form.is_valid(): 
             if bool(request.FILES.get('dataset', False)) == True:
                 new_csv = Project(dataset=request.FILES['dataset'])
                 new_csv.save()
