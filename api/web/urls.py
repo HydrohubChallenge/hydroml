@@ -23,6 +23,7 @@ urlpatterns = [
     path('clone/<int:project_id>', views.clone_project),
     path('delete/<int:project_id>', views.delete_project, name='delete-project'),
     path('project/<int:project_id>', views.open_project, name='open-project'),
+    path('project/<int:project_id>/train/', views.train_project),
     path('project/<int:project_id>/create_label/', views.create_label),
     path('project/<int:project_id>/update/<int:label_id>', views.update_label),
     path('project/<int:project_id>/clone/<int:label_id>', views.clone_label),

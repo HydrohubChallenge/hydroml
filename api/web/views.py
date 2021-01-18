@@ -5,7 +5,9 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.utils.translation import get_language
 from .forms import ProjectCreate, LabelCreate
-from .models import Project, Label
+from .models import Project, Label, ProjectPrediction
+from .tasks import precipitation
+
 import json
 
 import os, io, csv
@@ -63,7 +65,16 @@ def open_project(request, project_id):
 
         labels = Label.objects.filter(project=project_id)
 
-        content = {'loaded_data': data,'columns': columns, 'n_pages': range(1, pages+1), 'project': project_sel, 'labels': labels}
+        predictions = ProjectPrediction.objects.filter(project=project_id)
+
+        content = {
+            'loaded_data': data,
+            'columns': columns,
+            'n_pages': range(1, pages+1),
+            'project': project_sel,
+            'labels': labels,
+            'predictions': predictions
+        }
 
     except Project.DoesNotExist:
         return redirect("index")
@@ -191,4 +202,11 @@ def delete_label(request, project_id, label_id):
     except Label.DoesNotExist:
         return redirect('open-project', project_id=project_id)
     label_sel.delete()
+    return redirect('open-project', project_id=project_id)
+
+
+@login_required
+def train_project(request, project_id):
+    project_id = int(project_id)
+    precipitation.delay(project_id)
     return redirect('open-project', project_id=project_id)

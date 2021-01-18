@@ -65,3 +65,6 @@ widgetsnbextension==3.5.1
 xarray==0.16.1
 celery==5.0.5
 redis==3.5.3
+scikit-learn==0.24
+matplotlib==3.3.3
+

@@ -11,6 +11,11 @@ def user_directory_path(instance, filename):
     return 'datasets/user_{0}/{1}'.format(instance.owner_id, filename)
 
 
+def pickle_directory_path(instance, filename):
+    # File will be uploaded to MEDIA_ROOT/datasets/user_<id>/filename
+    return 'models/project_{0}/{1}'.format(instance.project_id, filename)
+
+
 class BaseModel(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -41,14 +46,6 @@ class Project(BaseModel):
         default='New Project',
     )
 
-    # Dataset as blob. Future implementation, if needed.
-    # dataset = models.BinaryField(
-    #     blank=True,
-    #     null=True,
-    #     editable=True,
-    # )
-
-    # Dataset as File.
     dataset = models.FileField(
         null=True,
         upload_to=user_directory_path,
@@ -81,6 +78,35 @@ class Label(BaseModel):
     color = models.CharField(
         max_length=7,
         default='#000000',
+    )
+
+
+    def __str__(self):
+        return self.name
+
+class ProjectPrediction(BaseModel):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.DO_NOTHING,
+    )
+
+    status = models.BooleanField(
+        default=False,
+    )
+
+    accuracy = models.DecimalField(
+        blank=True,
+        max_digits=18,
+        decimal_places=17,
+    )
+
+    confusion_matrix = models.TextField(
+        blank=True,
+    )
+
+    pickle = models.FileField(
+        null=True,
+        upload_to=pickle_directory_path,
     )
 
 

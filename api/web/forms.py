@@ -25,12 +25,22 @@ class ProjectCreate(forms.ModelForm):
 
 
     def clean_dataset(self):
+        # csv_pattern = [
+        #     'datetime',
+        #     'station',
+        #     'variable',
+        #     'measurement',
+        #     'quality'
+        # ]
+
         csv_pattern = [
             'datetime',
-            'station',
-            'variable',
-            'measurement',
-            'quality'
+            'central_farm',
+            'chaa_creek',
+            'hawkesworth_bridge',
+            'santa_elena',
+            'avg',
+            'label'
         ]
 
         uploaded_dataset = self.cleaned_data["dataset"]
