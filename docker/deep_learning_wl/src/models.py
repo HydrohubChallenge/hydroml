@@ -40,12 +40,12 @@ def compute_appends(ni, no):
 @dataclass
 class KerasMLP:
 
-    epochs = 5
+    epochs = 300
     layer_activation = 'relu'
     output_activation = 'softmax'
     optimizer = "adam"
     loss_function = 'categorical_crossentropy'
-    batch_size = 50
+    batch_size = 10
     estimator = None
     model = None
 
