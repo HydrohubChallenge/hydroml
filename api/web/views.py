@@ -1,16 +1,17 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.utils.translation import get_language
+from django.urls import reverse
+from urllib.parse import urlencode
 from .forms import ProjectCreate, LabelCreate
 from .models import Project, Label, ProjectPrediction
 from .tasks import precipitation
 
 import json
 
-import os, io, csv
+import os
 import pandas as pd
 
 
@@ -44,6 +45,7 @@ def create(request):
 
 def open_project(request, project_id):
     project_id = int(project_id)
+    tab = request.GET.get('tab')
     try:
         project_sel = Project.objects.get(id=project_id)
         csv_delimiter = project_sel.delimiter
@@ -73,7 +75,8 @@ def open_project(request, project_id):
             'n_pages': range(1, pages+1),
             'project': project_sel,
             'labels': labels,
-            'predictions': predictions
+            'predictions': predictions,
+            'tab': tab,
         }
 
     except Project.DoesNotExist:
@@ -208,5 +211,37 @@ def delete_label(request, project_id, label_id):
 @login_required
 def train_project(request, project_id):
     project_id = int(project_id)
-    precipitation.delay(project_id)
-    return redirect('open-project', project_id=project_id)
+    prediction = ProjectPrediction.objects.create(
+        project_id=project_id,
+        status=False,
+        confusion_matrix=0,
+        accuracy=0,
+        precision=0,
+        recall=0,
+        f1_score=0,
+        pickle='-'
+    )
+    prediction.save()
+    pred_id = prediction.id
+    precipitation.delay(project_id, pred_id)
+    messages.add_message(request, messages.SUCCESS, 'New training started')
+
+    base_url = reverse('open-project', kwargs={'project_id': project_id})
+    query_string = urlencode({'tab': "models"})
+    url = '{}?{}'.format(base_url, query_string)
+
+    return redirect(url)
+
+@login_required
+def delete_prediction(request, project_id, pred_id):
+    pred_id = int(pred_id)
+    try:
+        pred_sel = ProjectPrediction.objects.get(id=pred_id)
+        pred_sel.delete()
+        base_url = reverse('open-project', kwargs={'project_id': project_id})
+        query_string = urlencode({'tab': "models"})
+        url = '{}?{}'.format(base_url, query_string)
+        return redirect(url)
+    except ProjectPrediction.DoesNotExist:
+        # return redirect('open-project', project_id=project_id)
+        return redirect('index')

@@ -16,6 +16,7 @@ class ProjectCreate(forms.ModelForm):
         fields = [
             'name',
             'description',
+            'type',
             'delimiter',
             'dataset',
         ]

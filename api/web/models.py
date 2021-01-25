@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 import pandas as pd
 import os
@@ -30,6 +31,14 @@ class BaseModel(models.Model):
 
 
 class Project(BaseModel):
+
+    class Type(models.IntegerChoices):
+        RAINFALL = 1, _('Rainfall')
+        WATER_LEVEL = 2, _('Water Level')
+
+        __empty__ = _('(Unknown)')
+
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='projects',
@@ -44,6 +53,10 @@ class Project(BaseModel):
 
     description = models.TextField(
         default='New Project',
+    )
+
+    type = models.IntegerField(
+        choices = Type.choices,
     )
 
     dataset = models.FileField(
@@ -100,6 +113,24 @@ class ProjectPrediction(BaseModel):
         decimal_places=17,
     )
 
+    precision = models.DecimalField(
+        blank=True,
+        max_digits=18,
+        decimal_places=17,
+    )
+
+    recall = models.DecimalField(
+        blank=True,
+        max_digits=18,
+        decimal_places=17,
+    )
+
+    f1_score = models.DecimalField(
+        blank=True,
+        max_digits=18,
+        decimal_places=17,
+    )
+
     confusion_matrix = models.TextField(
         blank=True,
     )
@@ -112,3 +143,4 @@ class ProjectPrediction(BaseModel):
 
     def __str__(self):
         return self.name
+

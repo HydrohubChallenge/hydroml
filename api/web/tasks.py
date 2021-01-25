@@ -10,14 +10,16 @@ import numpy as np
 
 from datetime import datetime
 
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import plot_confusion_matrix, accuracy_score
+from sklearn.metrics import plot_confusion_matrix
+from sklearn import metrics
+
+import time
 
 import matplotlib.pyplot as plt
 
 @shared_task
-def precipitation(project_id):
+def precipitation(project_id, pred_id):
 
     project_sel = Project.objects.get(id=project_id)
 
@@ -25,8 +27,8 @@ def precipitation(project_id):
     csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
     file = open(csv_file, 'r')
     data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates= ['datetime'])
-    path = "models/precipitation"
-    model_base_path = os.path.join(settings.MEDIA_ROOT, path)
+    path = "models/precipitation/"
+    model_base_path = os.path.join(settings.MEDIA_ROOT, path, str(project_id))
     def split_df(df, x_columns, y_column, day):
         df = df.reset_index()
 
@@ -64,9 +66,13 @@ def precipitation(project_id):
     clf.fit(X_train, y_train)
 
     y_pred = clf.predict(X_test)
-    accu = accuracy_score(y_test, y_pred)
 
-    filename_model = f'{model_base_path}/rf_001.pickle'
+    accu = metrics.accuracy_score(y_test, y_pred)
+    precision = metrics.precision_score(y_test,y_pred)
+    recall = metrics.recall_score(y_test,y_pred)
+    f1 = metrics.f1_score(y_test,y_pred)
+
+    filename_model = f'{model_base_path}/{str(pred_id)}.pickle'
     model_dir = os.path.dirname(filename_model)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
@@ -80,11 +86,16 @@ def precipitation(project_id):
                                  cmap=plt.cm.Blues,
                                  normalize='true')
 
-    prediction = ProjectPrediction.objects.create(
-        project_id=project_id,
-        status=True,
-        confusion_matrix=disp.confusion_matrix,
-        accuracy=accu,
-        pickle=model_dir
-    )
-    prediction.save()
+    # time.sleep(100)
+
+    obj = ProjectPrediction.objects.get(id=pred_id)
+    obj.status=True
+    obj.confusion_matrix=disp.confusion_matrix
+    obj.accuracy=accu
+    obj.precision=precision
+    obj.recall=recall
+    obj.f1_score=f1
+    obj.pickle=filename_model
+    obj.save()
+
+    return f1
