@@ -7,14 +7,20 @@ import pickle
 
 import pandas as pd
 import numpy as np
+import tensorflow as tf
+import sklearn.neural_network
+import pathlib
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import plot_confusion_matrix
+from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
-import time
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, Input, LSTM, Bidirectional, Flatten
+from keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D
 
 import matplotlib.pyplot as plt
 
@@ -81,12 +87,11 @@ def precipitation(project_id, pred_id):
 
     class_names = [0, 1]
 
-    disp = plot_confusion_matrix(clf, X_test, y_test,
+    disp = metrics.plot_confusion_matrix(clf, X_test, y_test,
                                  display_labels=class_names,
                                  cmap=plt.cm.Blues,
                                  normalize='true')
 
-    # time.sleep(100)
 
     obj = ProjectPrediction.objects.get(id=pred_id)
     obj.status=True
@@ -98,4 +103,6 @@ def precipitation(project_id, pred_id):
     obj.pickle=filename_model
     obj.save()
 
-    return f1
+
+def water_level(project_id, pred_id):
+    return 0

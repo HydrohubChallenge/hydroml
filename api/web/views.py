@@ -135,8 +135,11 @@ def delete_project(request, project_id):
     try:
         project_sel = Project.objects.get(id=project_id)
         labels_sel = Label.objects.filter(project_id=project_id)
+        pred_sel = ProjectPrediction.objects.filter(project_id=project_id)
     except Project.DoesNotExist:
         return redirect("index")
+    for pred in pred_sel:
+        pred.delete()
     for label in labels_sel:
         label.delete()
     project_sel.delete()
@@ -237,11 +240,10 @@ def delete_prediction(request, project_id, pred_id):
     pred_id = int(pred_id)
     try:
         pred_sel = ProjectPrediction.objects.get(id=pred_id)
-        pred_sel.delete()
-        base_url = reverse('open-project', kwargs={'project_id': project_id})
-        query_string = urlencode({'tab': "models"})
-        url = '{}?{}'.format(base_url, query_string)
-        return redirect(url)
     except ProjectPrediction.DoesNotExist:
-        # return redirect('open-project', project_id=project_id)
         return redirect('index')
+    pred_sel.delete()
+    base_url = reverse('open-project', kwargs={'project_id': project_id})
+    query_string = urlencode({'tab': "models"})
+    url = '{}?{}'.format(base_url, query_string)
+    return redirect(url)

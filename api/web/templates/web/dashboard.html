@@ -51,31 +51,10 @@
                                     </a>
                                 </div>
                                 <div class="col-sm-2">
-                                    <a type="button" data-toggle="modal" data-target="#confirmDeleteModal" data-message="If you proceed, the project will be deleted."
-                                       id='deleteButton{{project.id}}' href="{% url 'delete-project' project.id %}">
-                                       <span style="color: red;" class="fas fa-trash-alt"></span>
+                                    <a href="{% url 'delete-project' project.id %}" class="delete"
+                                       data-confirm="Do you really want to delete these project? This process cannot be undone.">
+                                        <span style="color: red;" class="fas fa-trash-alt"></span>
                                     </a>
-
-                                    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered" role="document">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                <h5 class="modal-title" id="DeleteConfirmationTitle">Are you sure?</h5>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                  <span aria-hidden="true">&times;</span>
-                                                </button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    Do you really want to delete these project? This process cannot be undone.
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a type="button" class="btn btn-primary" data-dismiss="modal">Cancel</a>
-                                                    <a type="button" class="btn btn-danger" data-dismiss="modal" id="confirmDeleteButtonModal">Delete</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                 </div>
                             </div>
                             <p class="card-text"><small><strong>Created:</strong></small> {{project.created_at}}</p>
@@ -96,24 +75,19 @@
 <!-- /.content-wrapper -->
 
 <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => {
-        var buttons = document.querySelectorAll("[data-target='#confirmDeleteModal']");
-        for (const button of buttons) {
-            button.addEventListener("click", function(event) {
-                // find the modal and add the caller-id as an attribute
-                var modal = document.getElementById("confirmDeleteModal");
-                modal.setAttribute("caller-id", this.getAttribute("id"));
-            })
-        }
 
-        document.getElementById("confirmDeleteButtonModal").onclick = () => {
-            // when the Confirm Button in the modal is clicked
-            var button_clicked = event.target
-            var caller_id = button_clicked.closest("#confirmDeleteModal").getAttribute("caller-id");
-            var caller = document.getElementById(caller_id);
-            // open the url that was specified for the caller
-            window.location = caller.getAttribute("href");
-        };
-    });
+    var deleteLinks = document.querySelectorAll('.delete');
+
+    for (var i = 0; i < deleteLinks.length; i++) {
+      deleteLinks[i].addEventListener('click', function(event) {
+          event.preventDefault();
+
+          var choice = confirm(this.getAttribute('data-confirm'));
+
+          if (choice) {
+            window.location.href = this.getAttribute('href');
+          }
+      });
+    }
 </script>
 {% endblock %}
