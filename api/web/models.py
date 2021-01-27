@@ -57,6 +57,8 @@ class Project(BaseModel):
 
     type = models.IntegerField(
         choices = Type.choices,
+        null=True,
+        blank=True,
     )
 
     dataset = models.FileField(
@@ -144,3 +146,28 @@ class ProjectPrediction(BaseModel):
     def __str__(self):
         return self.name
 
+
+class Features(BaseModel):
+
+    class Type(models.IntegerChoices):
+        target = 1, _('Target')
+        ignore = 2, _('Ignore')
+        input = 3, _('Input')
+        __empty__ = _('(Unknown)')
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.DO_NOTHING,
+    )
+
+    column = models.CharField(
+        max_length = 50,
+    )
+    type = models.IntegerField(
+        choices = Type.choices,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.name

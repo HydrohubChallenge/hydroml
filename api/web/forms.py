@@ -1,7 +1,8 @@
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
-from .models import Project, Label
+from .models import Project, Label, Features
+
 
 class ProjectCreate(forms.ModelForm):
 
