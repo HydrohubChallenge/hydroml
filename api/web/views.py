@@ -6,8 +6,10 @@ from django.utils.translation import get_language
 from django.urls import reverse
 from urllib.parse import urlencode
 from .forms import ProjectCreate, LabelCreate
-from .models import Project, Label, ProjectPrediction
+from .models import Project, Label, ProjectPrediction, Features
 from .tasks import precipitation
+from django.forms import inlineformset_factory
+from django import forms
 
 import json
 
@@ -35,6 +37,26 @@ def create(request):
             obj = create.save(commit=False)
             obj.owner = request.user
             obj.save()
+
+            csv_delimiter = obj.delimiter
+            csv_file = os.path.join(settings.MEDIA_ROOT, obj.dataset.name)
+            file = open(csv_file, 'r')
+            df = pd.read_csv(file, delimiter=csv_delimiter)
+
+            if not 'label' in df.columns:
+                df["label"] = " "
+                df.to_csv(csv_file, sep=csv_delimiter, index=False)
+
+            columnscsv = df.columns.values.tolist()
+
+            for column in columnscsv:
+                objectColumn = Features.objects.create(
+                    column = column,
+                    project = obj,
+                )
+                objectColumn.save()
+
+
             return redirect("index")
         else:
             content = {'form': create, "create_form": create}
@@ -52,31 +74,38 @@ def open_project(request, project_id):
         csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
         file = open(csv_file, 'r')
         df = pd.read_csv(file, delimiter=csv_delimiter)
-
-        if not 'label' in df.columns:
-            df["label"] = " "
-            df.to_csv(csv_file, sep=csv_delimiter, index=False)
-
         df.fillna(0)
         data = df.values.tolist()
-        columns = df.columns.values.tolist()
+        columnscsv = df.columns.values.tolist()
         pages = round(len(df.index)/100)
 
         data = json.dumps(data)
-        columns = json.dumps(columns)
+        columns = json.dumps(columnscsv)
 
         labels = Label.objects.filter(project=project_id)
 
         predictions = ProjectPrediction.objects.filter(project=project_id)
 
+        features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0)
+
+        if request.method == 'POST':
+            formset = features(request.POST, instance=project_sel)
+            if formset.is_valid():
+                formset.save()
+        else:
+            formset = features(instance=project_sel)
+
+
         content = {
             'loaded_data': data,
             'columns': columns,
-            'n_pages': range(1, pages+1),
             'project': project_sel,
             'labels': labels,
             'predictions': predictions,
             'tab': tab,
+            'columnscsv': columnscsv,
+            'formset': formset,
+
         }
 
     except Project.DoesNotExist:
@@ -94,7 +123,7 @@ def update_project(request, project_id):
     if request.method == 'POST':
         project_form = ProjectCreate(request.POST, request.FILES, instance=project_sel)
 
-        if project_form.is_valid(): 
+        if project_form.is_valid():
             if bool(request.FILES.get('dataset', False)) == True:
                 new_csv = Project(dataset=request.FILES['dataset'])
                 new_csv.save()
@@ -134,11 +163,10 @@ def delete_project(request, project_id):
     project_id = int(project_id)
     try:
         project_sel = Project.objects.get(id=project_id)
-        labels_sel = Label.objects.filter(project_id=project_id)
+        Label.objects.filter(project_id=project_id).delete()
+        Features.objects.filter(project_id=project_id).delete()
     except Project.DoesNotExist:
         return redirect("index")
-    for label in labels_sel:
-        label.delete()
     project_sel.delete()
     return redirect("index")
 
