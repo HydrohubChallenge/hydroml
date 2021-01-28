@@ -51,15 +51,15 @@
     <div class="content">
         <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem;margin: 30px; padding:10px; margin-left: 0px;">
 
-                <ul class="nav nav-tabs">
-                    <li class="nav-item {% if tab != "models" %}active{% endif %}">
-                        <a class="nav-link {% if tab != "models" %}active{% endif %} text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
+                <ul class="nav nav-tabs" id="projectTab">
+                    <li class="nav-item active">
+                        <a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "Labels" %}</a>
                     </li>
-                    <li class="nav-item {% if tab == "models" %}active{% endif %}">
-                        <a class="nav-link {% if tab == "models" %}active{% endif %} text-secondary" data-toggle="tab" href="#models">{% translate "Models" %}</a>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#models">{% translate "Models" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary" data-toggle="tab" href="#features">{% translate "features" %}</a>
@@ -70,7 +70,7 @@
                 </ul>
 
                 <div class="tab-content">
-                    <div class="tab-pane fade {% if tab != "models" %}show active{% endif %}" id="data">
+                    <div class="tab-pane fade show active" id="data">
                         <div style="margin: 10px; margin-left: 0px;" id="data-table"></div>
                         <!-- <div class="pagination-table" style="margin: 10px; margin-left: 0px;" id="pagination">
                             {% for p in n_pages %}
@@ -114,7 +114,7 @@
                             {% endfor %}
                         </table>
                     </div>
-                    <div class="tab-pane fade {% if tab == "models" %}show active{% endif %}" id="models">
+                    <div class="tab-pane fade" id="models">
                         <div style="margin: 10px; margin-left: 0px;">
                             <a type="button" class="btn btn-lg btn-success" href="{{ project.id }}/train/">Train Model</a>
                             <div style="margin: 10px; margin-left: 0px;">
@@ -211,6 +211,22 @@
 
 {% block javascript %}
 <script type="text/javascript">
+    $('#projectTab a').click(function(e) {
+      e.preventDefault();
+      $(this).tab('show');
+    });
+
+    // store the currently selected tab in the hash value
+    $("ul.nav-tabs > li > a").on("shown.bs.tab", function(e) {
+      var id = $(e.target).attr("href").substr(1);
+      window.location.hash = id;
+    });
+
+    // on load of the page: switch to the currently selected tab
+    var hash = window.location.hash;
+    $('#projectTab a[href="' + hash + '"]').tab('show');
+
+
     var deleteLinks = document.querySelectorAll('.delete');
 
     for (var i = 0; i < deleteLinks.length; i++) {

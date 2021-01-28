@@ -102,4 +102,9 @@ def precipitation(project_id, pred_id):
 
 
 def water_level(project_id, pred_id):
-    return 0
+    project_sel = Project.objects.get(id=project_id)
+
+    csv_delimiter = project_sel.delimiter
+    csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
+    file = open(csv_file, 'r')
+    data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])

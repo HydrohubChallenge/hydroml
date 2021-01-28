@@ -109,6 +109,7 @@ def open_project(request, project_id):
 
     except Project.DoesNotExist:
         return redirect("index")
+
     return render(request, "web/project_view.html", content)
 
 
