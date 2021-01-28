@@ -5,10 +5,11 @@ from django.conf import settings
 from django.utils.translation import get_language
 from django.urls import reverse
 from urllib.parse import urlencode
-from .forms import ProjectCreate, LabelCreate
+from .forms import ProjectCreate, LabelCreate, FeatureInlineFormset
 from .models import Project, Label, ProjectPrediction, Features
 from .tasks import precipitation, water_level
 from django.forms import inlineformset_factory
+from django import forms
 
 import json
 
@@ -85,10 +86,13 @@ def open_project(request, project_id):
 
         predictions = ProjectPrediction.objects.filter(project=project_id)
 
-        features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0)
+        features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0, formset=FeatureInlineFormset)
+
+
 
         if request.method == 'POST':
             formset = features(request.POST, instance=project_sel)
+            print(formset.errors)
             if formset.is_valid():
                 formset.save()
         else:
@@ -104,7 +108,6 @@ def open_project(request, project_id):
             'tab': tab,
             'columnscsv': columnscsv,
             'formset': formset,
-
         }
 
     except Project.DoesNotExist:
@@ -277,4 +280,3 @@ def delete_prediction(request, project_id, pred_id):
     query_string = urlencode({'tab': "models"})
     url = '{}?{}'.format(base_url, query_string)
     return redirect(url)
-

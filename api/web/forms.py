@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Project, Label, Features
 
 
+
 class ProjectCreate(forms.ModelForm):
 
     class Meta:
@@ -84,3 +85,18 @@ class LabelCreate(forms.ModelForm):
         widgets = {
             'color': forms.TextInput(attrs={'type': 'color'}),
         }
+
+class FeatureInlineFormset(forms.BaseInlineFormSet):
+
+    def clean(self):
+        super().clean()
+        target_columns_count = 0
+        for form in self.forms:
+            current_type = form.cleaned_data['type']
+
+            if current_type == 1: #Target
+                target_columns_count += 1
+
+        if target_columns_count > 1:
+            
+            raise forms.ValidationError('Apenas uma coluna target é permitida por dataset')
