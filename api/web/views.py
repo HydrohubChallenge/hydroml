@@ -7,7 +7,7 @@ from django.urls import reverse
 from urllib.parse import urlencode
 from .forms import ProjectCreate, LabelCreate
 from .models import Project, Label, ProjectPrediction, Features
-from .tasks import precipitation
+from .tasks import precipitation, water_level
 from django.forms import inlineformset_factory
 
 import json
@@ -251,7 +251,11 @@ def train_project(request, project_id):
     )
     prediction.save()
     pred_id = prediction.id
-    precipitation.delay(project_id, pred_id)
+    if Project.objects.get(id=project_id).type == 1:
+        precipitation.delay(project_id, pred_id)
+    elif Project.objects.get(id=project_id).type == 2:
+        water_level.delay(project_id, pred_id)
+
     messages.add_message(request, messages.SUCCESS, 'New training started')
 
     base_url = reverse('open-project', kwargs={'project_id': project_id})

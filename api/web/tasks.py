@@ -18,9 +18,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
-from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Input, LSTM, Bidirectional, Flatten
-from keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D
 
 import matplotlib.pyplot as plt
 

@@ -36,7 +36,7 @@ class Project(BaseModel):
         RAINFALL = 1, _('Rainfall')
         WATER_LEVEL = 2, _('Water Level')
 
-        __empty__ = _('(Unknown)')
+        __empty__ = _('-- Select an option below --')
 
 
     owner = models.ForeignKey(
@@ -57,8 +57,8 @@ class Project(BaseModel):
 
     type = models.IntegerField(
         choices = Type.choices,
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
     )
 
     dataset = models.FileField(
