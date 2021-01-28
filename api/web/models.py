@@ -57,7 +57,7 @@ class Project(BaseModel):
 
     type = models.IntegerField(
         choices = Type.choices,
-        null=False,
+        null=True,
         blank=False,
     )
 
