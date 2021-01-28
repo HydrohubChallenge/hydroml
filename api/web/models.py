@@ -151,9 +151,9 @@ class Features(BaseModel):
 
     class Type(models.IntegerChoices):
         target = 1, _('Target')
-        ignore = 2, _('Ignore')
+        skip = 2, _('Skip')
         input = 3, _('Input')
-        __empty__ = _('(Unknown)')
+        #__empty__ = _('(Unknown)')
 
     project = models.ForeignKey(
         Project,

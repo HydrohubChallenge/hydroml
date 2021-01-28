@@ -51,18 +51,18 @@
     <div class="content">
         <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem;margin: 30px; padding:10px; margin-left: 0px;">
 
-                <ul class="nav nav-tabs">
-                    <li class="nav-item {% if tab != "models" %}active{% endif %}">
-                        <a class="nav-link {% if tab != "models" %}active{% endif %} text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
+                <ul class="nav nav-tabs" id="projectTab">
+                    <li class="nav-item active">
+                        <a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#Features">{% translate "Features" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "Labels" %}</a>
                     </li>
-                    <li class="nav-item {% if tab == "models" %}active{% endif %}">
-                        <a class="nav-link {% if tab == "models" %}active{% endif %} text-secondary" data-toggle="tab" href="#models">{% translate "Models" %}</a>
-                    </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" data-toggle="tab" href="#features">{% translate "features" %}</a>
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#models">{% translate "Models" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary" data-toggle="tab" href="#metadata">{% translate "Metadata" %}</a>
@@ -70,7 +70,7 @@
                 </ul>
 
                 <div class="tab-content">
-                    <div class="tab-pane fade {% if tab != "models" %}show active{% endif %}" id="data">
+                    <div class="tab-pane fade show active" id="data">
                         <div style="margin: 10px; margin-left: 0px;" id="data-table"></div>
                         <!-- <div class="pagination-table" style="margin: 10px; margin-left: 0px;" id="pagination">
                             {% for p in n_pages %}
@@ -114,7 +114,7 @@
                             {% endfor %}
                         </table>
                     </div>
-                    <div class="tab-pane fade {% if tab == "models" %}show active{% endif %}" id="models">
+                    <div class="tab-pane fade" id="models">
                         <div style="margin: 10px; margin-left: 0px;">
                             <a type="button" class="btn btn-lg btn-success" href="{{ project.id }}/train/">Train Model</a>
                             <div style="margin: 10px; margin-left: 0px;">
@@ -165,7 +165,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade   " id="features">
+                    <div class="tab-pane fade   " id="Features">
                         <div style="margin: 10px; margin-left: 0px;">
                             <!-- <table class="table table-hover">
                                 {% for columnstest in columnscsv %}
@@ -174,24 +174,34 @@
                                 </tr>
                                 {% endfor %}-->
                               <table class="table table-hover">
-                                <form method="post">
-                                    {{ formset.management_form }}
-                                    {% csrf_token %}
-                                    {% for form in formset %}
+                                <thead>
+                                  <tr>
+                                    <th scope="col">COLUMN</th>
+                                    <th scope="col">FEATURES</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <form method="post">
+                                      {{ formset.management_form }}
+                                      {{ formset.non_form_errors }}
+                                      {% csrf_token %}
+                                      {% for form in formset %}
                                       {{ form.id }}
                                       {{ form.column.as_hidden }}
                                       <tr>
                                         <td>{{ form.column.value }}</td>
                                         <td>{{form.type}}</td>
+                                        <td></td>
                                       </tr>
-                                    {% endfor %}
-                                    <tr>
+                                      {% endfor %}
+                                      <tr>
                                         <td></td>
                                         <td>
-                                            <button class="btn btn-lg btn-success" type="submit">{% translate "SaveButton" %}</button>
+                                            <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
                                         </td>
-                                    </tr>
+                                      </tr>
                                   </form>
+                                </tbody>
                               </table>
 
                         </div>
@@ -211,6 +221,23 @@
 
 {% block javascript %}
 <script type="text/javascript">
+
+  $('#projectTab a').click(function(e) {
+      e.preventDefault();
+      $(this).tab('show');
+    });
+
+    // store the currently selected tab in the hash value
+    $("ul.nav-tabs > li > a").on("shown.bs.tab", function(e) {
+      var id = $(e.target).attr("href").substr(1);
+      window.location.hash = id;
+    });
+
+    // on load of the page: switch to the currently selected tab
+    var hash = window.location.hash;
+    $('#projectTab a[href="' + hash + '"]').tab('show');
+
+
     var deleteLinks = document.querySelectorAll('.delete');
 
     for (var i = 0; i < deleteLinks.length; i++) {
@@ -262,5 +289,6 @@
     Handsontable.dom.addEvent(window, 'hashchange', function (event) {
         hot.loadData(getData());
     });
+
 </script>
 {% endblock javascript %}
