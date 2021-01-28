@@ -183,7 +183,7 @@
                                 <tbody>
                                   <form method="post">
                                       {{ formset.management_form }}
-                                      {{ formset.non_form_errors }}
+                                      <b><font color=red> {{ formset.non_form_errors }}</font></b>
                                       {% csrf_token %}
                                       {% for form in formset %}
                                       {{ form.id }}
