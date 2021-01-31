@@ -12,6 +12,7 @@ services:
       - GRANT_SUDO=yes
     ports:
       - "8888:8888"
+      - "8051:8050"
     logging:
       driver: "json-file"
       options:
@@ -74,3 +75,10 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
+
+  injects_anomalies_wl:
+    build:
+      context: ./docker/injects_anomalies_wl/
+      dockerfile: ./Dockerfile
+    ports:
+      - "8050:8050"

@@ -12,7 +12,8 @@ RUN apt-get update && \
         cdo \
         libgdal-dev \
         gdal-bin \
-        ffmpeg
+        ffmpeg \
+        graphviz
 
 USER jovyan
 
@@ -41,7 +42,9 @@ RUN pip install \
     h5py \
     cmocean \
     pendulum \
-    iso8601
+    iso8601 \
+    dash_table dash jupyter_dash dash_extensions \
+    chart-studio plotly plotly-geo
 
 RUN fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER

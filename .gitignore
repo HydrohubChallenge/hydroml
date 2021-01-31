@@ -6,6 +6,9 @@ data/
 
 api/.bash_history
 
+.DS_Store
+
+
 # from https://github.com/github/gitignore/blob/master/Python.gitignore
 
 # Byte-compiled / optimized / DLL files
