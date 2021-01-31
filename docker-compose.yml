@@ -1,7 +1,6 @@
 version: "3.5"
 
 services:
-
   jupyter:
     build: ./docker/jupyter
     restart: unless-stopped
@@ -49,6 +48,28 @@ services:
       - ./data/pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  redis:
+    image: redis
+    restart: unless-stopped
+
+  celery_worker:
+    build: ./docker/django
+    restart: unless-stopped
+    command: celery -A hydroml worker -l info
+    env_file:
+      - .env
+    volumes:
+      - ./api:/api
+      - ./data/media:/data/media
+    depends_on:
+      - api
+      - redis
     logging:
       driver: "json-file"
       options:

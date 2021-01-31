@@ -1,0 +1,27 @@
+{% load static %}
+{% load i18n %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{% static 'web/css/custom.stylesheet.css' %}">
+    <link rel="stylesheet" href="{% static 'web/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web/fa/css/all.min.css' %}">
+    <title>Login - HydroHUB</title>
+</head>
+
+<body class="login-body bg-gradient-primary">
+
+{% block content %}
+{% endblock %}
+
+<script src="{% static 'web/js/jquery.min.js' %}"></script>
+<script src="{% static 'web/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'web/js/custom.script.js' %}"></script>
+
+</body>
+</html>

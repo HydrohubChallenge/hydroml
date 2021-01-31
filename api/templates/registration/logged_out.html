@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+
+<p>{% translate "LoggedOut" %}</p>
+<p><a href="{% url 'login' %}">{% translate "LoginLink" %}</a></p>
+
+{% endblock %}
