@@ -31,12 +31,12 @@ def create(request):
     if request.method == "POST":
         create = ProjectCreate(request.POST, request.FILES)
         if create.is_valid():
-            new_csv = Project(dataset=request.FILES['dataset'])
-            new_csv.save()
-
             obj = create.save(commit=False)
             obj.owner = request.user
             obj.save()
+
+            new_csv = Project(dataset=request.FILES['dataset'])
+            new_csv.save()
 
             csv_delimiter = obj.delimiter
             csv_file = os.path.join(settings.MEDIA_ROOT, obj.dataset.name)
@@ -74,10 +74,9 @@ def open_project(request, project_id):
         csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
         file = open(csv_file, 'r')
         df = pd.read_csv(file, delimiter=csv_delimiter)
-        df.fillna(0)
+        df.fillna(0, inplace=True)
         data = df.values.tolist()
         columnscsv = df.columns.values.tolist()
-        pages = round(len(df.index)/100)
 
         data = json.dumps(data)
         columns = json.dumps(columnscsv)
@@ -262,11 +261,12 @@ def train_project(request, project_id):
 
     messages.add_message(request, messages.SUCCESS, 'New training started')
 
-    base_url = reverse('open-project', kwargs={'project_id': project_id})
-    query_string = urlencode({'tab': "models"})
-    url = '{}?{}'.format(base_url, query_string)
+    # base_url = reverse('open-project', kwargs={'project_id': project_id})
+    # query_string = urlencode({'tab': "models"})
+    # url = '{}?{}'.format(base_url, query_string)
+    # return redirect(url)
 
-    return redirect(url)
+    return redirect('open-project', project_id=project_id)
 
 @login_required
 def delete_prediction(request, project_id, pred_id):
@@ -276,7 +276,11 @@ def delete_prediction(request, project_id, pred_id):
     except ProjectPrediction.DoesNotExist:
         return redirect('index')
     pred_sel.delete()
-    base_url = reverse('open-project', kwargs={'project_id': project_id})
-    query_string = urlencode({'tab': "models"})
-    url = '{}?{}'.format(base_url, query_string)
-    return redirect(url)
+
+    # base_url = reverse('open-project', kwargs={'project_id': project_id})
+    # query_string = urlencode({'tab': "models"})
+    # url = '{}?{}'.format(base_url, query_string)
+    # return redirect(url)
+
+    return redirect('open-project', project_id=project_id)
+

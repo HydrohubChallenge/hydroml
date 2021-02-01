@@ -36,7 +36,7 @@ class Project(BaseModel):
         RAINFALL = 1, _('Rainfall')
         WATER_LEVEL = 2, _('Water Level')
 
-        __empty__ = _('-- Select an option below --')
+        # __empty__ = _('-- Select an option below --')
 
 
     owner = models.ForeignKey(

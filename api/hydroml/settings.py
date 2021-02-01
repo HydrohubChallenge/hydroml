@@ -166,8 +166,11 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = '../data/media/'
 
-# MAX_UPLOAD_SIZE = "5242880"
+MAX_UPLOAD_SIZE = 5242880
 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
 # Redirect to index after login
 
