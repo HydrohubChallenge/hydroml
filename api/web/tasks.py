@@ -1,5 +1,5 @@
 from celery import shared_task
-from .models import Project, ProjectPrediction
+from .models import Project, ProjectPrediction, Features
 from django.conf import settings
 
 import os
@@ -24,6 +24,9 @@ import matplotlib.pyplot as plt
 @shared_task
 def precipitation(project_id, pred_id):
 
+
+    features_sel = Features.objects.filter(project_id=project_id).values_list('id', flat=True)
+    print(features_sel)
     project_sel = Project.objects.get(id=project_id)
 
     csv_delimiter = project_sel.delimiter
@@ -50,6 +53,8 @@ def precipitation(project_id, pred_id):
 
         df['avg'] = df[columns].mean(axis=1)
 
+
+
         df.loc[df[target] > df['avg'] * (1 + threshold), 'label'] = 0
         df.loc[df[target] <= df['avg'] * (1 + threshold), 'label'] = 1
 
@@ -57,16 +62,36 @@ def precipitation(project_id, pred_id):
 
         return df
 
-    data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
+    input=[]
+    skip=[]
+    target=[]
+    for id in features_sel:
+        count = Features.objects.get(id=id)
+        print(id, type(id))
+        if count.type == 3:
+            input.append(count.column)
+        elif count.type == 2:
+             skip.append(count.column)
+        elif count.type == 1:
+            target.append(count.column)
+    print(input)
+    print(skip)
+    print(target)
+
+    data.drop(skip, axis=1, inplace=True)
+    print(data.head())
+
+    #data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
+
+    #data['santa_elena'] = pd.to_numeric(data['santa_elena'])
 
     X_train, X_test, y_train, y_test = split_df(data,
-                                                ['central_farm', 'chaa_creek', 'hawkesworth_bridge', 'santa_elena'],
-                                                'label',
+                                                input,
+                                                target,
                                                 datetime(2020, 11, 1).date())
 
     clf = RandomForestClassifier(max_depth=7, n_estimators=250)
-
-    clf.fit(X_train, y_train)
+    clf.fit(X_train, y_train.values.ravel())
 
     y_pred = clf.predict(X_test)
 

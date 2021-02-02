@@ -170,4 +170,5 @@ class Features(BaseModel):
     )
 
     def __str__(self):
-        return self.name
+        x=str(self.id)
+        return x

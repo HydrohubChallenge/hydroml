@@ -167,13 +167,15 @@
                     </div>
                     <div class="tab-pane fade   " id="Features">
                         <div style="margin: 10px; margin-left: 0px;">
+
                             <!-- <table class="table table-hover">
                                 {% for columnstest in columnscsv %}
                                 <tr>
                                     <td>{{columnstest}}</td>
                                 </tr>
-                                {% endfor %}-->
-                              <table class="table table-hover">
+                                {% endfor %} -->
+
+                            <table class="table table-hover">
                                 <thead>
                                   <tr>
                                     <th scope="col">COLUMN</th>
@@ -182,46 +184,48 @@
                                 </thead>
                                 <tbody>
                                   <form method="post">
-                                      {{ formset.management_form }}
-                                      <b><font color=red> {{ formset.non_form_errors }}</font></b>
-                                      {% csrf_token %}
-                                      {% for form in formset %}
-                                      {{ form.id }}
-                                      {{ form.column.as_hidden }}
-                                      <tr>
-                                        <td>{{ form.column.value }}</td>
-                                        <td>{{form.type}}</td>
-                                        <td></td>
-                                      </tr>
-                                      {% endfor %}
-                                      <tr>
-                                        <td></td>
-                                        <td>
-                                            <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
-                                        </td>
-                                      </tr>
-                                  </form>
-                                </tbody>
-                              </table>
+                                     {{ formset.management_form }}
+                                     <b><font st color=red> {{ formset.non_form_errors }}</font></b>
+                                     {% csrf_token %}
+                                     {% for form in formset %}
+                                     {{ form.id }}
+                                     {{ form.column.as_hidden }}
+                                     <tr>
+                                       <td>{{ form.column.value }}</td>
+                                       <td>{{form.type}}</td>
+                                       <td></td>
+                                     </tr>
+                                     {% endfor %}
+                                     <tr>
+                                       <td></td>
+                                       <td>
+                                           <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
+                                       </td>
+                                     </tr>
+                                 </form>
+                               </tbody>
+                             </table>
 
-                        </div>
+                       </div>
                     </div>
-                    <div class="tab-pane fade   " id="metadata">
-                        <div style="margin: 10px; margin-left: 0px;">
-                            <p>Metadata</p>
-                        </div>
-                    </div>
-                </div>
 
-        </div><!-- /.container-fluid -->
-    </div>
+                   <div class="tab-pane fade   " id="metadata">
+                       <div style="margin: 10px; margin-left: 0px;">
+                           <p>Metadata</p>
+                       </div>
+                   </div>
+               </div>
+
+        </div> <!-- /.container-fluid -->
+   </div>
     <!-- /.content -->
-</div>
+  </div>
 {% endblock %}
 
 {% block javascript %}
 <script type="text/javascript">
-    $('#projectTab a').click(function(e) {
+
+  $('#projectTab a').click(function(e) {
       e.preventDefault();
       $(this).tab('show');
     });
