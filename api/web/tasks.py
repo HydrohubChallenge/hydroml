@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 def precipitation(project_id, pred_id):
 
 
-    features_sel = Features.objects.filter(project_id=project_id).values_list('id', flat=True)
+    features_sel = Features.objects.filter(project_id=project_id)
     print(features_sel)
     project_sel = Project.objects.get(id=project_id)
 
@@ -64,30 +64,36 @@ def precipitation(project_id, pred_id):
 
     input=[]
     skip=[]
-    target=[]
-    for id in features_sel:
-        count = Features.objects.get(id=id)
-        print(id, type(id))
+    #target=[]
+    target = None
+    for count in features_sel:
+        #count = Features.objects.get(id=id)
         if count.type == 3:
             input.append(count.column)
         elif count.type == 2:
              skip.append(count.column)
         elif count.type == 1:
-            target.append(count.column)
+            print(type(count.column))
+            #target.append(count.column)
+            target = count.column
+
     print(input)
     print(skip)
     print(target)
 
+
+
+
     data.drop(skip, axis=1, inplace=True)
     print(data.head())
 
-    #data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
+    data = create_data_classification(data, np.array(input), target, 0.3)
 
     #data['santa_elena'] = pd.to_numeric(data['santa_elena'])
 
     X_train, X_test, y_train, y_test = split_df(data,
-                                                input,
-                                                target,
+                                                input + [target],
+                                                'label',
                                                 datetime(2020, 11, 1).date())
 
     clf = RandomForestClassifier(max_depth=7, n_estimators=250)
