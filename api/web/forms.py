@@ -46,12 +46,17 @@ class ProjectCreate(forms.ModelForm):
         # ]
 
         # Reverton
+        # csv_pattern = [
+        #     'datetime',
+        #     'station_id',
+        #     'variable_id',
+        #     'measured',
+        #     'updated_at'
+        # ]
+
+        # Test
         csv_pattern = [
-            'datetime',
-            'station_id',
-            'variable_id',
-            'measured',
-            'updated_at'
+            'datetime'
         ]
 
         uploaded_dataset = self.cleaned_data["dataset"]

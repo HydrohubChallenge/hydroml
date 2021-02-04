@@ -153,6 +153,7 @@ class Features(BaseModel):
         target = 1, _('Target')
         skip = 2, _('Skip')
         input = 3, _('Input')
+        timestamp = 4, _('Timestamp')
         #__empty__ = _('(Unknown)')
 
     project = models.ForeignKey(

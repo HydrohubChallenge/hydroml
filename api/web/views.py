@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.utils.translation import get_language
+import json as simplejson
 from django.urls import reverse
 from urllib.parse import urlencode
 from .forms import ProjectCreate, LabelCreate, FeatureInlineFormset
@@ -87,8 +88,6 @@ def open_project(request, project_id):
 
         features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0, formset=FeatureInlineFormset)
 
-
-
         if request.method == 'POST':
             formset = features(request.POST, instance=project_sel)
             print(formset.errors)
@@ -97,17 +96,54 @@ def open_project(request, project_id):
         else:
             formset = features(instance=project_sel)
 
+        try:
+            features_sel = Features.objects.filter(project_id=project_id)
 
-        content = {
-            'loaded_data': data,
-            'columns': columns,
-            'project': project_sel,
-            'labels': labels,
-            'predictions': predictions,
-            'tab': tab,
-            'columnscsv': columnscsv,
-            'formset': formset,
-        }
+            input = []
+            timestamp = None
+            for count in features_sel:
+                if count.type == 4:
+                    timestamp = count.column
+                elif count.type == 3:
+                    input.append(count.column)
+
+            input_size = len(input)
+
+            categories = list(df[timestamp])
+
+            valuesList = []
+
+            for c in input:
+                values = list(df[c])
+                valuesList.append(values)
+
+            jsonList = simplejson.dumps(valuesList)
+
+            content = {
+                'loaded_data': data,
+                'columns': columns,
+                'project': project_sel,
+                'labels': labels,
+                'predictions': predictions,
+                'tab': tab,
+                'columnscsv': columnscsv,
+                'formset': formset,
+                'categories': categories,
+                'values': jsonList,
+                'input_size': input_size,
+                'input_columns': input,
+            }
+        except Features.DoesNotExist:
+            content = {
+                'loaded_data': data,
+                'columns': columns,
+                'project': project_sel,
+                'labels': labels,
+                'predictions': predictions,
+                'tab': tab,
+                'columnscsv': columnscsv,
+                'formset': formset,
+            }
 
     except Project.DoesNotExist:
         return redirect("index")
