@@ -29,4 +29,5 @@ urlpatterns = [
     path('project/<int:project_id>/clone/<int:label_id>', views.clone_label),
     path('project/<int:project_id>/delete/<int:label_id>', views.delete_label),
     path('project/<int:project_id>/deletepred/<int:pred_id>', views.delete_prediction),
+    path('project/<int:project_id>/download/<int:pred_id>', views.download_prediction),
 ]

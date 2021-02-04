@@ -10,7 +10,7 @@ from .models import Project, Label, ProjectPrediction, Features
 from .tasks import precipitation, water_level
 from django.forms import inlineformset_factory
 from django import forms
-
+from django.http import FileResponse
 import json
 
 import os
@@ -97,7 +97,6 @@ def open_project(request, project_id):
                 formset.save()
         else:
             formset = features(instance=project_sel)
-
 
         content = {
             'loaded_data': data,
@@ -245,7 +244,7 @@ def train_project(request, project_id):
     project_id = int(project_id)
     prediction = ProjectPrediction.objects.create(
         project_id=project_id,
-        status=False,
+        status=2,
         confusion_matrix=0,
         accuracy=0,
         precision=0,
@@ -257,6 +256,7 @@ def train_project(request, project_id):
     pred_id = prediction.id
     if Project.objects.get(id=project_id).type == 1:
         precipitation.delay(project_id, pred_id)
+        
     elif Project.objects.get(id=project_id).type == 2:
         water_level.delay(project_id, pred_id)
 
@@ -280,3 +280,14 @@ def delete_prediction(request, project_id, pred_id):
     query_string = urlencode({'tab': "models"})
     url = '{}?{}'.format(base_url, query_string)
     return redirect(url)
+
+@login_required
+def download_prediction(request, project_id, pred_id):
+    pred_id = int(pred_id)
+    try:
+        pred_sel = ProjectPrediction.objects.get(id=pred_id)
+    except ProjectPrediction.DoesNotExist:
+        return redirect('index')
+    file_name = pred_sel.pickle.name
+    response = FileResponse(open(file_name, 'rb'))
+    return response

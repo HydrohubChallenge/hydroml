@@ -100,15 +100,20 @@ class Label(BaseModel):
         return self.name
 
 class ProjectPrediction(BaseModel):
+    class Type(models.IntegerChoices):
+            Success = 1, _('Success')
+            Trainning = 2, _('Trainning')
+            Error = 3, _('Error')
     project = models.ForeignKey(
         Project,
         on_delete=models.DO_NOTHING,
     )
 
-    status = models.BooleanField(
-        default=False,
+    status = models.IntegerField(
+        choices = Type.choices,
+        null=True,
+        blank=True,
     )
-
     accuracy = models.DecimalField(
         blank=True,
         max_digits=18,
