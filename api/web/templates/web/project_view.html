@@ -160,7 +160,7 @@
                                                   <td><span class="badge badge-warning">Trainning</span></td>
                                                 {% elif pred.status == 3%}
                                                     <td><span class="badge badge-danger">Error</span></td>
-                                                {% endif %}    
+                                                {% endif %}
                                                 <td>{{ pred.created_at }}</td>
                                                 <td></td>
                                                 <td></td>
@@ -169,6 +169,12 @@
                                                 <td></td>
                                                 <td></td>
                                                 <td></td>
+                                                <td>
+                                                    <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
+                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone.">
+                                                        <span style="color: red;" class="fas fa-trash-alt"></span>
+                                                    </a>
+                                                </td>
                                             {% endif %}
                                       </tr>
                                         {% endfor %}

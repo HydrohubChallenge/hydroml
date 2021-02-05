@@ -1,0 +1,67 @@
+{% extends 'web/index.html' %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                        <h1 class="m-0">Create Feature</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
+                            <li class="breadcrumb-item active">Create Feature</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <div class="content">
+            <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem; padding-top: 50px;">
+                <div style="margin: 0 auto; width: 80%;">
+                  <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th scope="col">COLUMN</th>
+                          <th scope="col">FEATURES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <form method="post">
+                           {{ formset.management_form }}
+                           <b><font st color=red> {{ formset.non_form_errors }}</font></b>
+                           {% csrf_token %}
+                           {% for form in formset %}
+                           {{ form.id }}
+                           {{ form.column.as_hidden }}
+                           <tr>
+                             <td>{{ form.column.value }}</td>
+                             <td>{{form.type}}</td>
+                             <td></td>
+                           </tr>
+                           {% endfor %}
+                           <tr>
+                             <td></td>
+                             <td>
+                                 <a class="btn btn-lg btn-warning" href="javascript:history.go(-1)">{% translate " Return" %}</a>
+                                 <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
+                             </td>
+                           </tr>
+                       </form>
+                     </tbody>
+                   </table>
+
+                </div>
+            </div>
+    </div>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}

@@ -57,7 +57,7 @@ def create(request):
                 objectColumn.save()
 
 
-            return redirect("index")
+            return redirect("create-feature", project_id=obj.id)
         else:
             content = {'form': create, "create_form": create}
             return render(request, "web/create_form.html", content)
@@ -256,7 +256,7 @@ def train_project(request, project_id):
     pred_id = prediction.id
     if Project.objects.get(id=project_id).type == 1:
         precipitation.delay(project_id, pred_id)
-        
+
     elif Project.objects.get(id=project_id).type == 2:
         water_level.delay(project_id, pred_id)
 
@@ -291,3 +291,28 @@ def download_prediction(request, project_id, pred_id):
     file_name = pred_sel.pickle.name
     response = FileResponse(open(file_name, 'rb'))
     return response
+
+@login_required
+def create_feature(request, project_id):
+
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0, formset=FeatureInlineFormset)
+    if request.method == 'POST':
+        formset = features(request.POST, instance=project_sel)
+        print(formset.errors)
+        if formset.is_valid():
+            formset.save()
+            return redirect("index")
+    else:
+        formset = features(instance=project_sel)
+
+    content={
+        'formset':formset
+    }
+
+    return render(request, "web/create_feature.html", content)
