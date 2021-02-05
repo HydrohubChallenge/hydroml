@@ -1,7 +1,9 @@
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
-from .models import Project, Label
+from .models import Project, Label, Features
+
+
 
 class ProjectCreate(forms.ModelForm):
 
@@ -16,6 +18,7 @@ class ProjectCreate(forms.ModelForm):
         fields = [
             'name',
             'description',
+            'type',
             'delimiter',
             'dataset',
         ]
@@ -25,12 +28,22 @@ class ProjectCreate(forms.ModelForm):
 
 
     def clean_dataset(self):
+        # csv_pattern = [
+        #     'datetime',
+        #     'station',
+        #     'variable',
+        #     'measurement',
+        #     'quality'
+        # ]
+
         csv_pattern = [
             'datetime',
-            'station',
-            'variable',
-            'measurement',
-            'quality'
+            'central_farm',
+            'chaa_creek',
+            'hawkesworth_bridge',
+            'santa_elena',
+            'avg',
+            'label'
         ]
 
         uploaded_dataset = self.cleaned_data["dataset"]
@@ -72,3 +85,18 @@ class LabelCreate(forms.ModelForm):
         widgets = {
             'color': forms.TextInput(attrs={'type': 'color'}),
         }
+
+class FeatureInlineFormset(forms.BaseInlineFormSet):
+
+    def clean(self):
+        super().clean()
+        target_columns_count = 0
+        for form in self.forms:
+            current_type = form.cleaned_data['type']
+
+            if current_type == 1: #Target
+                target_columns_count += 1
+
+        if target_columns_count > 1:
+            
+            raise forms.ValidationError('Apenas uma coluna target é permitida por dataset')

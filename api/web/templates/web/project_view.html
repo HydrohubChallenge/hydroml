@@ -11,6 +11,7 @@
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1 class="m-0">{{ project.name }}</h1>
+                    <h5 class="font-italic">{{ project.get_type_display }}</h5>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -20,15 +21,42 @@
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
+        {% if messages %}
+        <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="MessageTitle">Success</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    <div class="modal-body">
+                         <ul class="messages">
+                            {% for message in messages %}
+                              {{ message }}
+                            {% endfor %}
+                         </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <a type="button" class="btn btn-primary" data-dismiss="modal">Close</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
     <!-- /.content-header -->
     <!-- Main content -->
     <div class="content">
-        <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem;margin: 10px; padding:10px; margin-left: 0px;">
+        <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem;margin: 30px; padding:10px; margin-left: 0px;">
 
-                <ul class="nav nav-tabs">
+                <ul class="nav nav-tabs" id="projectTab">
                     <li class="nav-item active">
                         <a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary" data-toggle="tab" href="#Features">{% translate "Features" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "Labels" %}</a>
@@ -77,30 +105,10 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <a type="button" data-toggle="modal" data-target="#confirmDeleteModal" data-message="If you proceed, the label will be deleted."
-                                       href="{{ project.id }}/delete/{{label.id}}" id='deleteButton{{label.id}}'>
-                                       <span style="color: red;" class="fas fa-trash-alt"></span>
+                                    <a href="{{ project.id }}/delete/{{label.id}}" class="delete"
+                                       data-confirm="Do you really want to delete these label? This process cannot be undone.">
+                                        <span style="color: red;" class="fas fa-trash-alt"></span>
                                     </a>
-
-                                    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered" role="document">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                <h5 class="modal-title" id="DeleteConfirmationTitle">Are you sure?</h5>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                  <span aria-hidden="true">&times;</span>
-                                                </button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    Do you really want to delete these label? This process cannot be undone.
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a type="button" class="btn btn-primary" data-dismiss="modal">Cancel</a>
-                                                    <a type="button" class="btn btn-danger" data-dismiss="modal" id="confirmDeleteButtonModal">Delete</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -108,42 +116,184 @@
                     </div>
                     <div class="tab-pane fade" id="models">
                         <div style="margin: 10px; margin-left: 0px;">
-                            <button type="button" class="btn btn-lg btn-success">Train Model</button>
+                            <a type="button" class="btn btn-lg btn-success" href="{{ project.id }}/train/">Train Model</a>
+                            <div style="margin: 10px; margin-left: 0px;">
+                                <!-- Table -->
+                                <table class="table table-hover" id="model-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col"></th>
+                                            <th scope="col">Start</th>
+                                            <th scope="col">Finish</th>
+                                            <th scope="col">Accuracy</th>
+                                            <th scope="col">Precision</th>
+                                            <th scope="col">Recall</th>
+                                            <th scope="col">F1 Score</th>
+                                            <th scope="col">Confusion Matrix</th>
+                                            <th scope="col"></th>
+                                            <th scope="col"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pred in predictions %}
+                                        <!--<tr style="background-color:{% if pred.status == True %}#b1cbd8{% else %}#FFFFB2{% endif %};">-->
+                                        <tr>
+                                            {% if pred.status == 1 %}
+                                                <td><span class="badge badge-success">Success</span></td>
+                                                <td>{{ pred.created_at }}</td>
+                                                <td>{{ pred.updated_at }}</td>
+                                                <td>{{ pred.accuracy }}</td>
+                                                <td>{{ pred.precision }}</td>
+                                                <td>{{ pred.recall }}</td>
+                                                <td>{{ pred.f1_score }}</td>
+                                                <td>{{ pred.confusion_matrix|linebreaksbr }}</td>
+                                                <td><a href="{{ project.id }}/download/{{ pred.id }}" download><span class="fas fa-download"></span></a></td>
+                                                <td>
+                                                    <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
+                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone.">
+                                                        <span style="color: red;" class="fas fa-trash-alt"></span>
+                                                    </a>
+                                                </td>
+
+                                            {% else %}
+                                                {% if pred.status == 2%}
+                                                  <td><span class="badge badge-warning">Trainning</span></td>
+                                                {% elif pred.status == 3%}
+                                                    <td><span class="badge badge-danger">Error</span></td>
+                                                {% endif %}
+                                                <td>{{ pred.created_at }}</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>
+                                                    <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
+                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone.">
+                                                        <span style="color: red;" class="fas fa-trash-alt"></span>
+                                                    </a>
+                                                </td>
+                                            {% endif %}
+                                      </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade   " id="metadata">
+                    <div class="tab-pane fade   " id="Features">
                         <div style="margin: 10px; margin-left: 0px;">
-                            <p>Metadata</p>
-                        </div>
+
+                            <!-- <table class="table table-hover">
+                                {% for columnstest in columnscsv %}
+                                <tr>
+                                    <td>{{columnstest}}</td>
+                                </tr>
+                                {% endfor %} -->
+
+                            <table class="table table-hover">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">COLUMN</th>
+                                    <th scope="col">FEATURES</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <form method="post">
+                                     {{ formset.management_form }}
+                                     <b><font st color=red> {{ formset.non_form_errors }}</font></b>
+                                     {% csrf_token %}
+                                     {% for form in formset %}
+                                     {{ form.id }}
+                                     {{ form.column.as_hidden }}
+                                     <tr>
+                                       <td>{{ form.column.value }}</td>
+                                       <td>{{form.type}}</td>
+                                       <td></td>
+                                     </tr>
+                                     {% endfor %}
+                                     <tr>
+                                       <td></td>
+                                       <td>
+                                           <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
+                                       </td>
+                                     </tr>
+                                 </form>
+                               </tbody>
+                             </table>
+
+                       </div>
                     </div>
-                </div>
 
-        </div><!-- /.container-fluid -->
-    </div>
+                   <div class="tab-pane fade   " id="metadata">
+                       <div style="margin: 10px; margin-left: 0px;">
+                           <p>Metadata</p>
+                       </div>
+                   </div>
+               </div>
+
+        </div> <!-- /.container-fluid -->
+   </div>
     <!-- /.content -->
-</div>
+  </div>
+{% endblock %}
 
-<script src="https://cdn.jsdelivr.net/npm/handsontable@8.2.0/dist/handsontable.full.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/handsontable@8.2.0/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
-
+{% block javascript %}
 <script type="text/javascript">
-     //var getData = (function () {
-       //var data = JSON.parse("{{loaded_data|escapejs}}");
 
-        //return function () {
-          //var page  = parseInt(window.location.hash.replace('#', ''), 10) || 1,
-            //limit = 100,
-            //row   = (page - 1) * limit,
-            //count = page * limit,
-            //part  = [];
+  $('#projectTab a').click(function(e) {
+      e.preventDefault();
+      $(this).tab('show');
+    });
 
-          //for (;row < count;row++) {
-            //part.push(data[row]);
-          //}
+    // store the currently selected tab in the hash value
+    $("ul.nav-tabs > li > a").on("shown.bs.tab", function(e) {
+      var id = $(e.target).attr("href").substr(1);
+      window.location.hash = id;
+    });
 
-          //return part;
-        //}
-     //})();
+    // on load of the page: switch to the currently selected tab
+    var hash = window.location.hash;
+    $('#projectTab a[href="' + hash + '"]').tab('show');
+
+
+    var deleteLinks = document.querySelectorAll('.delete');
+
+    for (var i = 0; i < deleteLinks.length; i++) {
+      deleteLinks[i].addEventListener('click', function(event) {
+          event.preventDefault();
+
+          var choice = confirm(this.getAttribute('data-confirm'));
+
+          if (choice) {
+            window.location.href = this.getAttribute('href');
+          }
+      });
+    }
+
+     $(document).ready(function(){
+        $('#messageModal').modal({show:true});
+    });
+
+     $(document).ready( function () {
+        $('#model-table').DataTable({
+             searching: false,
+             paging: false,
+             "lengthChange": false,
+             columns: [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                { orderable: false },
+              ]
+        });
+     } );
 
     var data = JSON.parse("{{loaded_data|escapejs}}");
 
@@ -161,24 +311,5 @@
         hot.loadData(getData());
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-        var buttons = document.querySelectorAll("[data-target='#confirmDeleteModal']");
-        for (const button of buttons) {
-            button.addEventListener("click", function(event) {
-                // find the modal and add the caller-id as an attribute
-                var modal = document.getElementById("confirmDeleteModal");
-                modal.setAttribute("caller-id", this.getAttribute("id"));
-            })
-        }
-
-        document.getElementById("confirmDeleteButtonModal").onclick = () => {
-            // when the Confirm Button in the modal is clicked
-            var button_clicked = event.target
-            var caller_id = button_clicked.closest("#confirmDeleteModal").getAttribute("caller-id");
-            var caller = document.getElementById(caller_id);
-            // open the url that was specified for the caller
-            window.location = caller.getAttribute("href");
-        };
-    });
 </script>
-{% endblock %}
+{% endblock javascript %}
