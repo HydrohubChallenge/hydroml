@@ -4,7 +4,6 @@ from django.conf import settings
 
 import os
 import pickle
-from datetime import datetime
 from dataclasses import dataclass
 import pathlib
 import datetime
@@ -89,7 +88,7 @@ def precipitation(project_id, pred_id):
         X_train, X_test, y_train, y_test = split_df(data,
                                                     input + [target],
                                                     'label',
-                                                    datetime(2020, 11, 1).date())
+                                                    datetime.datetime(2020, 11, 1).date())
 
         clf = RandomForestClassifier(max_depth=7, n_estimators=250)
         clf.fit(X_train, y_train.values.ravel())
@@ -129,7 +128,6 @@ def precipitation(project_id, pred_id):
         obj = ProjectPrediction.objects.get(id=pred_id)
         obj.status=3
         obj.save()
-        raise Exception()
 
 
 
