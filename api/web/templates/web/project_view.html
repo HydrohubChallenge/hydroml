@@ -71,18 +71,39 @@
 
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="data">
-                        <div style="margin: 10px; margin-left: 0px;" id="data-table"></div>
-                        <!-- <div class="pagination-table" style="margin: 10px; margin-left: 0px;" id="pagination">
-                            {% for p in n_pages %}
-                                <a href="#{{ p }}">{{ p }}</a>
-                            {% endfor %}
-                        </div> -->
+                        <div id="accordion" style="margin-top: 10px;">
+                          <div class="card">
+                            <div class="card-header bg-gradient-light" id="headingOne">
+                              <h3 class="mb-0">
+                                <button class="btn btn-link collapsed text-dark" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                  Chart
+                                </button>
+                              </h3>
+                            </div>
+                            <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+                              <div class="card-body" id="chartId" style="width:100%; height:400px;"></div>
+                            </div>
+                          </div>
+
+                          <div class="card">
+                            <div class="card-header bg-gradient-light" id="headingTwo">
+                              <h3 class="mb-0">
+                                <button class="btn btn-link collapsed text-dark" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                  Table
+                                </button>
+                              </h3>
+                            </div>
+                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                              <div class="card-body" id="data-table" style="padding-top: 0px;padding-left: 0px;padding-right: 0px;padding-bottom: 0px; width: 100%;"></div>
+                            </div>
+                          </div>
+                        </div>
                     </div>
                     <div class="tab-pane fade" id="labels">
                         <a class="btn btn-outline-primary" href="{{ project.id }}/create_label/"
                            style="margin: 10px; margin-left: 0px;">
                             <i class="fas fa-fw fa-plus"></i>
-                            <span>{% translate "NewLabel" %}</span>
+                            <span>New Label</span>
                         </a>
 
                         <!-- Table -->
@@ -243,7 +264,68 @@
 {% block javascript %}
 <script type="text/javascript">
 
-  $('#projectTab a').click(function(e) {
+    document.addEventListener('DOMContentLoaded', function () {
+        var categories = {{ categories|safe }};
+        var values = {{ values|safe }};
+
+        var input_size = {{ input_size|safe }}
+        var input_columns = {{ input_columns|safe }}
+
+        categories = categories.map(cat=>new Date(cat));
+
+        var size = values[0].length/10;
+
+        const chart = Highcharts.chart('chartId', {
+            chart: {
+                type: 'spline',
+                scrollablePlotArea: {
+                    minWidth: size,
+                    scrollPositionX: 1
+                }
+            },
+            boost: {
+                useGPUTranslations: true
+            },
+            title: {
+                text: 'Values measured'
+            },
+            xAxis: {
+                type: 'datetime',
+                labels: {
+                    overflow: 'justify'
+                },
+                categories: categories,
+                tickInterval: 100
+              },
+            yAxis: {
+                title: {
+                    text: 'Measured',
+                },
+                lineWidth: 1,
+                opposite: true
+            },
+            tooltip: {
+                valueSuffix: '',
+                split: true
+            },
+            // series: values
+            series: [{
+                name: input_columns[0],
+                data: values[0]
+            }]
+        });
+        if(chart.series.length === 1 && input_size > 1){
+            for(var i = 1; i < input_size; i++){
+                chart.addSeries({
+                    name: input_columns[i],
+                    data: values[i]
+                });
+            }
+        }
+    });
+
+
+    $('#projectTab a').click(function(e) {
       e.preventDefault();
       $(this).tab('show');
     });
@@ -296,15 +378,15 @@
      } );
 
     var data = JSON.parse("{{loaded_data|escapejs}}");
-
     var container = document.getElementById('data-table');
     var hot = new Handsontable(container, {
-        //data: getData(),
         data: data,
         colHeaders: JSON.parse("{{columns|escapejs}}"),
         rowHeaders: true,
         filters: true,
         dropdownMenu: true,
+        viewportRowRenderingOffset: 100,
+        stretchH: 'all',
         licenseKey: 'non-commercial-and-evaluation',
     });
     Handsontable.dom.addEvent(window, 'hashchange', function (event) {

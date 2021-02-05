@@ -4,16 +4,14 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Project, Label, Features
 
 
-
 class ProjectCreate(forms.ModelForm):
-
     class Meta:
         model = Project
         OPTIONS = (
-            (',','Comma'),
-            (';','Dot-Comma'),
-            ('\t','Tab'),
-            (' ','Space'),
+            (',', 'Comma'),
+            (';', 'Dot-Comma'),
+            ('\t', 'Tab'),
+            (' ', 'Space'),
         )
         fields = [
             'name',
@@ -26,8 +24,8 @@ class ProjectCreate(forms.ModelForm):
             'delimiter': forms.Select(choices=OPTIONS, attrs={'class': 'form-control'}),
         }
 
-
     def clean_dataset(self):
+        # HydroHUB
         # csv_pattern = [
         #     'datetime',
         #     'station',
@@ -36,14 +34,29 @@ class ProjectCreate(forms.ModelForm):
         #     'quality'
         # ]
 
+        # Tadashi
+        # csv_pattern = [
+        #     'datetime',
+        #     'central_farm',
+        #     'chaa_creek',
+        #     'hawkesworth_bridge',
+        #     'santa_elena',
+        #     'avg',
+        #     'label'
+        # ]
+
+        # Reverton
+        # csv_pattern = [
+        #     'datetime',
+        #     'station_id',
+        #     'variable_id',
+        #     'measured',
+        #     'updated_at'
+        # ]
+
+        # Test
         csv_pattern = [
-            'datetime',
-            'central_farm',
-            'chaa_creek',
-            'hawkesworth_bridge',
-            'santa_elena',
-            'avg',
-            'label'
+            'datetime'
         ]
 
         uploaded_dataset = self.cleaned_data["dataset"]
@@ -74,7 +87,6 @@ class ProjectCreate(forms.ModelForm):
 
 
 class LabelCreate(forms.ModelForm):
-
     class Meta:
         model = Label
         fields = [
@@ -86,6 +98,7 @@ class LabelCreate(forms.ModelForm):
             'color': forms.TextInput(attrs={'type': 'color'}),
         }
 
+
 class FeatureInlineFormset(forms.BaseInlineFormSet):
 
     def clean(self):
@@ -94,9 +107,8 @@ class FeatureInlineFormset(forms.BaseInlineFormSet):
         for form in self.forms:
             current_type = form.cleaned_data['type']
 
-            if current_type == 1: #Target
+            if current_type == 1:  # Target
                 target_columns_count += 1
 
         if target_columns_count > 1:
-            
-            raise forms.ValidationError('Apenas uma coluna target é permitida por dataset')
+            raise forms.ValidationError('You can have only one target column.')

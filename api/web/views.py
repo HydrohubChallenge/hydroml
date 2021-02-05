@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.utils.translation import get_language
+import json as simplejson
 from django.urls import reverse
 from urllib.parse import urlencode
 from .forms import ProjectCreate, LabelCreate, FeatureInlineFormset
@@ -31,12 +32,12 @@ def create(request):
     if request.method == "POST":
         create = ProjectCreate(request.POST, request.FILES)
         if create.is_valid():
-            new_csv = Project(dataset=request.FILES['dataset'])
-            new_csv.save()
-
             obj = create.save(commit=False)
             obj.owner = request.user
             obj.save()
+
+            new_csv = Project(dataset=request.FILES['dataset'])
+            new_csv.save()
 
             csv_delimiter = obj.delimiter
             csv_file = os.path.join(settings.MEDIA_ROOT, obj.dataset.name)
@@ -74,10 +75,9 @@ def open_project(request, project_id):
         csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
         file = open(csv_file, 'r')
         df = pd.read_csv(file, delimiter=csv_delimiter)
-        df.fillna(0)
+        df.fillna(0, inplace=True)
         data = df.values.tolist()
         columnscsv = df.columns.values.tolist()
-        pages = round(len(df.index)/100)
 
         data = json.dumps(data)
         columns = json.dumps(columnscsv)
@@ -88,26 +88,61 @@ def open_project(request, project_id):
 
         features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0, formset=FeatureInlineFormset)
 
-
-
         if request.method == 'POST':
             formset = features(request.POST, instance=project_sel)
-            print(formset.errors)
             if formset.is_valid():
                 formset.save()
         else:
             formset = features(instance=project_sel)
 
-        content = {
-            'loaded_data': data,
-            'columns': columns,
-            'project': project_sel,
-            'labels': labels,
-            'predictions': predictions,
-            'tab': tab,
-            'columnscsv': columnscsv,
-            'formset': formset,
-        }
+        try:
+            features_sel = Features.objects.filter(project_id=project_id)
+
+            input = []
+            timestamp = None
+            for count in features_sel:
+                if count.type == 4:
+                    timestamp = count.column
+                elif count.type == 3:
+                    input.append(count.column)
+
+            input_size = len(input)
+
+            categories = list(df[timestamp])
+
+            valuesList = []
+
+            for c in input:
+                values = list(df[c])
+                valuesList.append(values)
+
+            jsonList = simplejson.dumps(valuesList)
+
+            content = {
+                'loaded_data': data,
+                'columns': columns,
+                'project': project_sel,
+                'labels': labels,
+                'predictions': predictions,
+                'tab': tab,
+                'columnscsv': columnscsv,
+                'formset': formset,
+                'categories': categories,
+                'values': jsonList,
+                'input_size': input_size,
+                'input_columns': input,
+            }
+        except Features.DoesNotExist:
+            content = {
+                'loaded_data': data,
+                'columns': columns,
+                'project': project_sel,
+                'labels': labels,
+                'predictions': predictions,
+                'tab': tab,
+                'columnscsv': columnscsv,
+                'formset': formset,
+            }
 
     except Project.DoesNotExist:
         return redirect("index")
@@ -262,11 +297,12 @@ def train_project(request, project_id):
 
     messages.add_message(request, messages.SUCCESS, 'New training started')
 
-    base_url = reverse('open-project', kwargs={'project_id': project_id})
-    query_string = urlencode({'tab': "models"})
-    url = '{}?{}'.format(base_url, query_string)
+    # base_url = reverse('open-project', kwargs={'project_id': project_id})
+    # query_string = urlencode({'tab': "models"})
+    # url = '{}?{}'.format(base_url, query_string)
+    # return redirect(url)
 
-    return redirect(url)
+    return redirect('open-project', project_id=project_id)
 
 @login_required
 def delete_prediction(request, project_id, pred_id):
@@ -276,10 +312,12 @@ def delete_prediction(request, project_id, pred_id):
     except ProjectPrediction.DoesNotExist:
         return redirect('index')
     pred_sel.delete()
-    base_url = reverse('open-project', kwargs={'project_id': project_id})
-    query_string = urlencode({'tab': "models"})
-    url = '{}?{}'.format(base_url, query_string)
-    return redirect(url)
+    # base_url = reverse('open-project', kwargs={'project_id': project_id})
+    # query_string = urlencode({'tab': "models"})
+    # url = '{}?{}'.format(base_url, query_string)
+    # return redirect(url)
+
+    return redirect('open-project', project_id=project_id)
 
 @login_required
 def download_prediction(request, project_id, pred_id):

@@ -36,7 +36,7 @@ class Project(BaseModel):
         RAINFALL = 1, _('Rainfall')
         WATER_LEVEL = 2, _('Water Level')
 
-        __empty__ = _('-- Select an option below --')
+        # __empty__ = _('-- Select an option below --')
 
 
     owner = models.ForeignKey(
@@ -158,6 +158,7 @@ class Features(BaseModel):
         target = 1, _('Target')
         skip = 2, _('Skip')
         input = 3, _('Input')
+        timestamp = 4, _('Timestamp')
         #__empty__ = _('(Unknown)')
 
     project = models.ForeignKey(
