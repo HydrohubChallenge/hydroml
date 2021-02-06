@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
-from .models import Project, Label, Features
+from .models import Project, ProjectLabel, ProjectFeature
 
 
 class ProjectCreate(forms.ModelForm):
@@ -18,13 +18,13 @@ class ProjectCreate(forms.ModelForm):
             'description',
             'type',
             'delimiter',
-            'dataset',
+            'dataset_file',
         ]
         widgets = {
             'delimiter': forms.Select(choices=OPTIONS, attrs={'class': 'form-control'}),
         }
 
-    def clean_dataset(self):
+    def clean_dataset_file(self):
         # HydroHUB
         # csv_pattern = [
         #     'datetime',
@@ -59,7 +59,7 @@ class ProjectCreate(forms.ModelForm):
             'datetime'
         ]
 
-        uploaded_dataset = self.cleaned_data["dataset"]
+        uploaded_dataset = self.cleaned_data["dataset_file"]
         delimiter = self.cleaned_data.get("delimiter")
 
         if uploaded_dataset:
@@ -86,9 +86,9 @@ class ProjectCreate(forms.ModelForm):
         return uploaded_dataset
 
 
-class LabelCreate(forms.ModelForm):
+class ProjectLabelCreate(forms.ModelForm):
     class Meta:
-        model = Label
+        model = ProjectLabel
         fields = [
             'name',
             'description',
@@ -99,16 +99,37 @@ class LabelCreate(forms.ModelForm):
         }
 
 
-class FeatureInlineFormset(forms.BaseInlineFormSet):
+class ProjectFeatureInlineFormset(forms.BaseInlineFormSet):
 
     def clean(self):
         super().clean()
         target_columns_count = 0
+        timestamp_columns_count = 0
+        input_columns_count = 0
+
         for form in self.forms:
             current_type = form.cleaned_data['type']
 
-            if current_type == 1:  # Target
+            if current_type == ProjectFeature.Type.TARGET:
                 target_columns_count += 1
+
+            elif current_type == ProjectFeature.Type.TIMESTAMP:
+                timestamp_columns_count += 1
+
+            elif current_type == ProjectFeature.Type.INPUT:
+                input_columns_count += 1
 
         if target_columns_count > 1:
             raise forms.ValidationError('You can have only one target column.')
+
+        if timestamp_columns_count > 1:
+            raise forms.ValidationError('You can have only one timestamp column.')
+
+        if target_columns_count == 0:
+            raise forms.ValidationError('You have to select one target column.')
+
+        if timestamp_columns_count == 0:
+            raise forms.ValidationError('You have to select one timestamp column.')
+
+        if input_columns_count == 0:
+            raise forms.ValidationError('You have to select at least one input column.')

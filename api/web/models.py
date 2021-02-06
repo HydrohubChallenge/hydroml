@@ -1,10 +1,6 @@
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
-import pandas as pd
-import os
 
 
 def user_directory_path(instance, filename):
@@ -12,7 +8,7 @@ def user_directory_path(instance, filename):
     return 'datasets/user_{0}/{1}'.format(instance.owner_id, filename)
 
 
-def pickle_directory_path(instance, filename):
+def serialized_prediction_directory_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/datasets/user_<id>/filename
     return 'models/project_{0}/{1}'.format(instance.project_id, filename)
 
@@ -31,13 +27,9 @@ class BaseModel(models.Model):
 
 
 class Project(BaseModel):
-
     class Type(models.IntegerChoices):
         RAINFALL = 1, _('Rainfall')
         WATER_LEVEL = 2, _('Water Level')
-
-        # __empty__ = _('-- Select an option below --')
-
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -56,12 +48,12 @@ class Project(BaseModel):
     )
 
     type = models.IntegerField(
-        choices = Type.choices,
+        choices=Type.choices,
         null=True,
         blank=False,
     )
 
-    dataset = models.FileField(
+    dataset_file = models.FileField(
         null=True,
         upload_to=user_directory_path,
     )
@@ -71,12 +63,11 @@ class Project(BaseModel):
         default=',',
     )
 
-
     def __str__(self):
         return self.name
 
 
-class Label(BaseModel):
+class ProjectLabel(BaseModel):
     project = models.ForeignKey(
         Project,
         on_delete=models.DO_NOTHING,
@@ -95,25 +86,27 @@ class Label(BaseModel):
         default='#000000',
     )
 
-
     def __str__(self):
         return self.name
 
+
 class ProjectPrediction(BaseModel):
-    class Type(models.IntegerChoices):
-            Success = 1, _('Success')
-            Trainning = 2, _('Trainning')
-            Error = 3, _('Error')
+    class StatusType(models.IntegerChoices):
+        SUCCESS = 1, _('Success')
+        TRAINING = 2, _('Training')
+        ERROR = 3, _('Error')
+
     project = models.ForeignKey(
         Project,
         on_delete=models.DO_NOTHING,
     )
 
     status = models.IntegerField(
-        choices = Type.choices,
+        choices=StatusType.choices,
         null=True,
         blank=True,
     )
+
     accuracy = models.DecimalField(
         blank=True,
         max_digits=18,
@@ -142,24 +135,21 @@ class ProjectPrediction(BaseModel):
         blank=True,
     )
 
-    pickle = models.FileField(
+    serialized_prediction_file = models.FileField(
         null=True,
-        upload_to=pickle_directory_path,
+        upload_to=serialized_prediction_directory_path,
     )
 
-
     def __str__(self):
-        return self.name
+        return f'{self.project} - {self.id}'
 
 
-class Features(BaseModel):
-
+class ProjectFeature(BaseModel):
     class Type(models.IntegerChoices):
-        target = 1, _('Target')
-        skip = 2, _('Skip')
-        input = 3, _('Input')
-        timestamp = 4, _('Timestamp')
-        #__empty__ = _('(Unknown)')
+        TARGET = 1, _('Target')
+        SKIP = 2, _('Skip')
+        INPUT = 3, _('Input')
+        TIMESTAMP = 4, _('Timestamp')
 
     project = models.ForeignKey(
         Project,
@@ -167,14 +157,13 @@ class Features(BaseModel):
     )
 
     column = models.CharField(
-        max_length = 50,
+        max_length=50,
     )
+
     type = models.IntegerField(
-        choices = Type.choices,
-        null=True,
-        blank=True,
+        choices=Type.choices,
+        default=Type.SKIP
     )
 
     def __str__(self):
-        x=str(self.id)
-        return x
+        return f'{self.project} - {self.column}'

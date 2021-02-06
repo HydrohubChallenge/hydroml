@@ -1,69 +1,63 @@
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from django.conf import settings
-from django.utils.translation import get_language
-import json as simplejson
-from django.urls import reverse
-from urllib.parse import urlencode
-from .forms import ProjectCreate, LabelCreate, FeatureInlineFormset
-from .models import Project, Label, ProjectPrediction, Features
-from .tasks import precipitation, water_level
-from django.forms import inlineformset_factory
-from django import forms
-from django.http import FileResponse
 import json
-
+import json as simplejson
 import os
+
 import pandas as pd
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.forms import inlineformset_factory
+from django.http import FileResponse
+from django.shortcuts import render, redirect
+from django.utils.translation import get_language
+
+from .forms import ProjectCreate, ProjectLabelCreate, ProjectFeatureInlineFormset
+from .models import Project, ProjectLabel, ProjectPrediction, ProjectFeature
+from .tasks import train_precipitation_prediction, train_water_level_prediction
 
 
 @login_required
 def index(request):
-    dash = Project.objects.filter(owner=request.user).order_by('created_at')
+    projects = Project.objects.filter(owner=request.user).order_by('created_at')
     current_language = get_language()
-    content = {"dash": dash, "current_language": current_language}
+    content = {"projects": projects, "current_language": current_language}
     return render(request, "web/dashboard.html", content)
 
 
 @login_required
 def create(request):
-    create = ProjectCreate()
+    create_project_form = ProjectCreate()
     if request.method == "POST":
-        create = ProjectCreate(request.POST, request.FILES)
-        if create.is_valid():
-            obj = create.save(commit=False)
+        create_project_form = ProjectCreate(request.POST, request.FILES)
+        if create_project_form.is_valid():
+            obj = create_project_form.save(commit=False)
             obj.owner = request.user
             obj.save()
 
-            new_csv = Project(dataset=request.FILES['dataset'])
-            new_csv.save()
-
             csv_delimiter = obj.delimiter
-            csv_file = os.path.join(settings.MEDIA_ROOT, obj.dataset.name)
+            csv_file = os.path.join(settings.MEDIA_ROOT, obj.dataset_file.name)
             file = open(csv_file, 'r')
             df = pd.read_csv(file, delimiter=csv_delimiter)
 
-            if not 'label' in df.columns:
+            if 'label' not in df.columns:
                 df["label"] = " "
                 df.to_csv(csv_file, sep=csv_delimiter, index=False)
 
-            columnscsv = df.columns.values.tolist()
+            columns_csv = df.columns.values.tolist()
 
-            for column in columnscsv:
-                objectColumn = Features.objects.create(
-                    column = column,
-                    project = obj,
+            for column in columns_csv:
+                project_feature = ProjectFeature.objects.create(
+                    column=column,
+                    project=obj,
                 )
-                objectColumn.save()
-
+                project_feature.save()
 
             return redirect("create-feature", project_id=obj.id)
         else:
-            content = {'form': create, "create_form": create}
+            content = {"create_form": create_project_form}
             return render(request, "web/create_form.html", content)
     else:
-        return render(request, "web/create_form.html", {"create_form": create, "method": 'create'})
+        return render(request, "web/create_form.html", {"create_form": create_project_form, "method": 'create'})
 
 
 def open_project(request, project_id):
@@ -72,7 +66,7 @@ def open_project(request, project_id):
     try:
         project_sel = Project.objects.get(id=project_id)
         csv_delimiter = project_sel.delimiter
-        csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
+        csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset_file.name)
         file = open(csv_file, 'r')
         df = pd.read_csv(file, delimiter=csv_delimiter)
         df.fillna(0, inplace=True)
@@ -82,41 +76,44 @@ def open_project(request, project_id):
         data = json.dumps(data)
         columns = json.dumps(columnscsv)
 
-        labels = Label.objects.filter(project=project_id)
+        labels = ProjectLabel.objects.filter(project=project_id)
 
         predictions = ProjectPrediction.objects.filter(project=project_id)
 
-        features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0, formset=FeatureInlineFormset)
+        project_feature_formset_factory = inlineformset_factory(Project, ProjectFeature, fields=(
+            'type', 'column'), extra=0, formset=ProjectFeatureInlineFormset)
 
         if request.method == 'POST':
-            formset = features(request.POST, instance=project_sel)
-            if formset.is_valid():
-                formset.save()
+            project_feature_formset = project_feature_formset_factory(
+                request.POST, instance=project_sel)
+            if project_feature_formset.is_valid():
+                project_feature_formset.save()
         else:
-            formset = features(instance=project_sel)
+            project_feature_formset = project_feature_formset_factory(
+                instance=project_sel)
 
         try:
-            features_sel = Features.objects.filter(project_id=project_id)
+            project_features = ProjectFeature.objects.filter(project_id=project_id)
 
             input = []
             timestamp = None
-            for count in features_sel:
-                if count.type == 4:
-                    timestamp = count.column
-                elif count.type == 3:
-                    input.append(count.column)
+            for project_feature in project_features:
+                if project_feature.type == ProjectFeature.Type.TIMESTAMP:
+                    timestamp = project_feature.column
+                elif project_feature.type == ProjectFeature.Type.INPUT:
+                    input.append(project_feature.column)
 
             input_size = len(input)
 
             categories = list(df[timestamp])
 
-            valuesList = []
+            values_list = []
 
             for c in input:
                 values = list(df[c])
-                valuesList.append(values)
+                values_list.append(values)
 
-            jsonList = simplejson.dumps(valuesList)
+            json_list = simplejson.dumps(values_list)
 
             content = {
                 'loaded_data': data,
@@ -126,13 +123,13 @@ def open_project(request, project_id):
                 'predictions': predictions,
                 'tab': tab,
                 'columnscsv': columnscsv,
-                'formset': formset,
+                'project_feature_formset': project_feature_formset,
                 'categories': categories,
-                'values': jsonList,
+                'values': json_list,
                 'input_size': input_size,
                 'input_columns': input,
             }
-        except Features.DoesNotExist:
+        except ProjectFeature.DoesNotExist:
             content = {
                 'loaded_data': data,
                 'columns': columns,
@@ -141,7 +138,7 @@ def open_project(request, project_id):
                 'predictions': predictions,
                 'tab': tab,
                 'columnscsv': columnscsv,
-                'formset': formset,
+                'project_feature_formset': project_feature_formset,
             }
 
     except Project.DoesNotExist:
@@ -153,20 +150,17 @@ def open_project(request, project_id):
 @login_required
 def update_project(request, project_id):
     project_id = int(project_id)
+
     try:
         project_sel = Project.objects.get(id=project_id)
     except Project.DoesNotExist:
         return redirect("index")
+
     if request.method == 'POST':
         project_form = ProjectCreate(request.POST, request.FILES, instance=project_sel)
 
         if project_form.is_valid():
-            if bool(request.FILES.get('dataset', False)) == True:
-                new_csv = Project(dataset=request.FILES['dataset'])
-                new_csv.save()
-
             project_form.save()
-
             return redirect("index")
 
     else:
@@ -178,19 +172,31 @@ def update_project(request, project_id):
 @login_required
 def clone_project(request, project_id):
     project_id = int(project_id)
+
     try:
-        project_sel = Project.objects.get(id=project_id)
-        labels_sel = Label.objects.filter(project_id=project_id)
+        project = Project.objects.get(id=project_id)
+        project_labels = ProjectLabel.objects.filter(project_id=project_id)
+        project_features = ProjectFeature.objects.filter(project_id=project_id)
     except Project.DoesNotExist:
         return redirect("index")
-    project_sel.pk = None
-    new_name = project_sel.name + " (copy)"
-    project_sel.name = new_name
-    project_sel.save()
-    for label in labels_sel:
-        label.pk = None
-        label.project_id = project_sel.id
-        label.save()
+
+    project.id = None
+    project.pk = None
+    new_name = project.name + " (copy)"
+    project.name = new_name
+    project.save()
+
+    for project_label in project_labels:
+        project_label.id = None
+        project_label.pk = None
+        project_label.project_id = project.id
+        project_label.save()
+
+    for project_feature in project_features:
+        project_feature.id = None
+        project_feature.pk = None
+        project_feature.project_id = project.id
+        project_feature.save()
 
     return redirect("index")
 
@@ -200,8 +206,8 @@ def delete_project(request, project_id):
     project_id = int(project_id)
     try:
         project_sel = Project.objects.get(id=project_id)
-        Label.objects.filter(project_id=project_id).delete()
-        Features.objects.filter(project_id=project_id).delete()
+        ProjectLabel.objects.filter(project_id=project_id).delete()
+        ProjectFeature.objects.filter(project_id=project_id).delete()
         ProjectPrediction.objects.filter(project_id=project_id).delete()
     except Project.DoesNotExist:
         return redirect("index")
@@ -211,31 +217,32 @@ def delete_project(request, project_id):
 
 @login_required
 def create_label(request, project_id):
-    create = LabelCreate()
+    create_label_form = ProjectLabelCreate()
     if request.method == "POST":
-        create = LabelCreate(request.POST)
-        if create.is_valid():
-            obj = create.save(commit=False)
+        create_label_form = ProjectLabelCreate(request.POST)
+        if create_label_form.is_valid():
+            obj = create_label_form.save(commit=False)
             obj.project_id = project_id
             obj.save()
             return redirect('open-project', project_id=project_id)
         else:
-            content = {'form': create, "create_label": create}
+            content = {"create_label": create_label_form}
             return render(request, "web/create_label.html", content)
     else:
         return render(request, "web/create_label.html",
-                      {"create_label": create, "method": 'create', "project": Project.objects.get(id=project_id)})
+                      {"create_label": create_label_form, "method": 'create',
+                       "project": Project.objects.get(id=project_id)})
 
 
 @login_required
 def update_label(request, project_id, label_id):
     label_id = int(label_id)
     try:
-        label_sel = Label.objects.get(id=label_id)
-    except Label.DoesNotExist:
+        project_label = ProjectLabel.objects.get(id=label_id)
+    except ProjectLabel.DoesNotExist:
         return redirect('open-project', project_id=project_id)
     if request.method == 'POST':
-        label_form = LabelCreate(request.POST, instance=label_sel)
+        label_form = ProjectLabelCreate(request.POST, instance=project_label)
 
         if label_form.is_valid():
             label_form.save()
@@ -243,7 +250,7 @@ def update_label(request, project_id, label_id):
             return redirect('open-project', project_id=project_id)
 
     else:
-        label_form = LabelCreate(instance=label_sel)
+        label_form = ProjectLabelCreate(instance=project_label)
 
     return render(request, "web/create_label.html",
                   {"create_label": label_form, "method": 'update', "project": Project.objects.get(id=project_id)})
@@ -251,26 +258,24 @@ def update_label(request, project_id, label_id):
 
 @login_required
 def clone_label(request, project_id, label_id):
-    label_id = int(label_id)
     try:
-        label_sel = Label.objects.get(id=label_id)
-    except Label.DoesNotExist:
+        project_label = ProjectLabel.objects.get(id=int(label_id))
+    except ProjectLabel.DoesNotExist:
         return redirect('open-project', project_id=project_id)
-    label_sel.pk = None
-    new_name = label_sel.name + " (copy)"
-    label_sel.name = new_name
-    label_sel.save()
+    project_label.id = None
+    project_label.pk = None
+    new_name = project_label.name + " (copy)"
+    project_label.name = new_name
+    project_label.save()
     return redirect('open-project', project_id=project_id)
 
 
 @login_required
 def delete_label(request, project_id, label_id):
-    label_id = int(label_id)
     try:
-        label_sel = Label.objects.get(id=label_id)
-    except Label.DoesNotExist:
+        ProjectLabel.objects.get(id=int(label_id)).delete()
+    except ProjectLabel.DoesNotExist:
         return redirect('open-project', project_id=project_id)
-    label_sel.delete()
     return redirect('open-project', project_id=project_id)
 
 
@@ -285,72 +290,64 @@ def train_project(request, project_id):
         precision=0,
         recall=0,
         f1_score=0,
-        pickle='-'
     )
     prediction.save()
-    pred_id = prediction.id
-    if Project.objects.get(id=project_id).type == 1:
-        precipitation.delay(project_id, pred_id)
 
-    elif Project.objects.get(id=project_id).type == 2:
-        water_level.delay(project_id, pred_id)
+    if Project.objects.get(id=project_id).type == Project.Type.RAINFALL:
+        train_precipitation_prediction.delay(project_id, prediction.id)
+
+    elif Project.objects.get(id=project_id).type == Project.Type.WATER_LEVEL:
+        train_water_level_prediction.delay(project_id, prediction.id)
 
     messages.add_message(request, messages.SUCCESS, 'New training started')
 
-    # base_url = reverse('open-project', kwargs={'project_id': project_id})
-    # query_string = urlencode({'tab': "models"})
-    # url = '{}?{}'.format(base_url, query_string)
-    # return redirect(url)
+    return redirect('open-project', project_id=project_id)
+
+
+@login_required
+def delete_prediction(request, project_id, prediction_id):
+    try:
+        ProjectPrediction.objects.get(id=int(prediction_id)).delete()
+    except ProjectPrediction.DoesNotExist:
+        return redirect('index')
 
     return redirect('open-project', project_id=project_id)
 
-@login_required
-def delete_prediction(request, project_id, pred_id):
-    pred_id = int(pred_id)
-    try:
-        pred_sel = ProjectPrediction.objects.get(id=pred_id)
-    except ProjectPrediction.DoesNotExist:
-        return redirect('index')
-    pred_sel.delete()
-    # base_url = reverse('open-project', kwargs={'project_id': project_id})
-    # query_string = urlencode({'tab': "models"})
-    # url = '{}?{}'.format(base_url, query_string)
-    # return redirect(url)
-
-    return redirect('open-project', project_id=project_id)
 
 @login_required
-def download_prediction(request, project_id, pred_id):
-    pred_id = int(pred_id)
+def download_prediction(request, prediction_id):
     try:
-        pred_sel = ProjectPrediction.objects.get(id=pred_id)
+        project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
     except ProjectPrediction.DoesNotExist:
         return redirect('index')
-    file_name = pred_sel.pickle.name
+
+    file_name = project_prediction.serialized_prediction_file.name
     response = FileResponse(open(file_name, 'rb'))
     return response
 
+
 @login_required
 def create_feature(request, project_id):
-
-    project_id = int(project_id)
     try:
-        project_sel = Project.objects.get(id=project_id)
+        project = Project.objects.get(id=int(project_id))
     except Project.DoesNotExist:
         return redirect("index")
 
-    features = inlineformset_factory(Project, Features, fields=('type','column'), extra=0, formset=FeatureInlineFormset)
+    project_feature_formset_factory = inlineformset_factory(Project, ProjectFeature, fields=(
+        'type', 'column'), extra=0, formset=ProjectFeatureInlineFormset)
+
     if request.method == 'POST':
-        formset = features(request.POST, instance=project_sel)
-        print(formset.errors)
-        if formset.is_valid():
-            formset.save()
+        project_feature_formset = project_feature_formset_factory(
+            request.POST, instance=project)
+        if project_feature_formset.is_valid():
+            project_feature_formset.save()
             return redirect("index")
     else:
-        formset = features(instance=project_sel)
+        project_feature_formset = project_feature_formset_factory(
+            instance=project)
 
-    content={
-        'formset':formset
+    content = {
+        'project_feature_formset': project_feature_formset
     }
 
     return render(request, "web/create_feature.html", content)
