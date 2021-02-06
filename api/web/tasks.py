@@ -1,47 +1,40 @@
-from celery import shared_task
-from .models import Project, ProjectPrediction, Features
-from django.conf import settings
-
+import datetime
 import os
 import pickle
+import random
 from dataclasses import dataclass
-import pathlib
-import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import sklearn.neural_network
 import tensorflow
 from celery import shared_task
 from django.conf import settings
+from keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D, Dense, Dropout, Input, LSTM, Bidirectional, Flatten
+from keras.models import Sequential, Model
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-import sklearn.neural_network
-
-from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Input, LSTM, Bidirectional, Flatten
-from keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D
-
-import random
 from sklearn.preprocessing import label_binarize
-import tensorflow
 
 from .models import Project, ProjectPrediction
+from .models import ProjectFeature
 
 
 @shared_task
-def precipitation(project_id, pred_id):
-
+def train_precipitation_prediction(project_id, pred_id):
     try:
-        features_sel = Features.objects.filter(project_id=project_id)
-        project_sel = Project.objects.get(id=project_id)
+        project_features = ProjectFeature.objects.filter(project_id=project_id)
+        project = Project.objects.get(id=project_id)
 
-        csv_delimiter = project_sel.delimiter
-        csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
+        csv_delimiter = project.delimiter
+        csv_file = os.path.join(settings.MEDIA_ROOT, project.dataset_file.name)
         file = open(csv_file, 'r')
-        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates= ['datetime'])
+        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])
         path = "models/precipitation/"
         model_base_path = os.path.join(settings.MEDIA_ROOT, path, str(project_id))
+
         def split_df(df, x_columns, y_column, day):
             df = df.reset_index()
 
@@ -60,8 +53,6 @@ def precipitation(project_id, pred_id):
 
             df['avg'] = df[columns].mean(axis=1)
 
-
-
             df.loc[df[target] > df['avg'] * (1 + threshold), 'label'] = 0
             df.loc[df[target] <= df['avg'] * (1 + threshold), 'label'] = 1
 
@@ -69,24 +60,23 @@ def precipitation(project_id, pred_id):
 
             return df
 
-        input=[]
-        skip=[]
-        target = None
-        for count in features_sel:
-            if count.type == 3:
-                input.append(count.column)
-            elif count.type == 2:
-                 skip.append(count.column)
-            elif count.type == 1:
-                print(type(count.column))
-                target = count.column
+        input_column_names = []
+        skip_column_names = []
+        target_column_name = None
+        for project_feature in project_features:
+            if project_feature.type == ProjectFeature.Type.INPUT:
+                input_column_names.append(project_feature.column)
+            elif project_feature.type == ProjectFeature.Type.SKIP:
+                skip_column_names.append(project_feature.column)
+            elif project_feature.type == ProjectFeature.Type.TARGET:
+                target_column_name = project_feature.column
 
-        data.drop(skip, axis=1, inplace=True)
+        data.drop(skip_column_names, axis=1, inplace=True)
 
-        data = create_data_classification(data, np.array(input), target, 0.3)
+        data = create_data_classification(data, np.array(input_column_names), target_column_name, 0.3)
 
         X_train, X_test, y_train, y_test = split_df(data,
-                                                    input + [target],
+                                                    input_column_names + [target_column_name],
                                                     'label',
                                                     datetime.datetime(2020, 11, 1).date())
 
@@ -96,9 +86,9 @@ def precipitation(project_id, pred_id):
         y_pred = clf.predict(X_test)
 
         accu = metrics.accuracy_score(y_test, y_pred)
-        precision = metrics.precision_score(y_test,y_pred)
-        recall = metrics.recall_score(y_test,y_pred)
-        f1 = metrics.f1_score(y_test,y_pred)
+        precision = metrics.precision_score(y_test, y_pred)
+        recall = metrics.recall_score(y_test, y_pred)
+        f1 = metrics.f1_score(y_test, y_pred)
 
         filename_model = f'{model_base_path}/{str(pred_id)}.pickle'
         model_dir = os.path.dirname(filename_model)
@@ -110,29 +100,24 @@ def precipitation(project_id, pred_id):
         class_names = [0, 1]
 
         disp = metrics.plot_confusion_matrix(clf, X_test, y_test,
-                                     display_labels=class_names,
-                                     cmap=plt.cm.Blues,
-                                     normalize='true')
+                                             display_labels=class_names,
+                                             cmap=plt.cm.Blues,
+                                             normalize='true')
 
-
-        obj = ProjectPrediction.objects.get(id=pred_id)
-        obj.status=1
-        obj.confusion_matrix=disp.confusion_matrix
-        obj.accuracy=accu
-        obj.precision=precision
-        obj.recall=recall
-        obj.f1_score=f1
-        obj.pickle=filename_model
-        obj.save()
-    except:
-        obj = ProjectPrediction.objects.get(id=pred_id)
-        obj.status=3
-        obj.save()
-
+        ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
+                                                            confusion_matrix=disp.confusion_matrix,
+                                                            accuracy=accu,
+                                                            precision=precision,
+                                                            recall=recall,
+                                                            f1_score=f1,
+                                                            serialized_prediction_file=filename_model)
+    except Exception as e:
+        print(f'train_precipitation_prediction Error: {e}')
+        ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)
 
 
 @shared_task
-def water_level(project_id, pred_id):
+def train_water_level_prediction(project_id, pred_id):
     @dataclass
     class KerasMLP:
         epochs = 5
@@ -244,30 +229,6 @@ def water_level(project_id, pred_id):
             outputs = Dense(out_dim, activation=self.output_activaton)(x)
             self.model = Model(inputs=inputs, outputs=outputs, name='LSTM')
             return self
-
-
-    # ------------------------------------------------
-    # ----------- Global Parameters ------------------
-
-    # Split Methodology = 1 => random data, 75% for training and 25% for validation
-    # Split Methodology = 2 => ------------75%--------------- | --- 25% ---
-    split_methodology = 1
-
-    # hti = the horizontal scale in hours
-    hti = 1
-    horizontal_ti = hti * 12
-
-    # Class balancing = True or False. If false then there will be a lot more "normal" data then anomalies and
-    # processing time will be much higher.
-    class_balancing = True
-
-    project_sel = Project.objects.get(id=project_id)
-    csv_delimiter = project_sel.delimiter
-    csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset.name)
-    file = open(csv_file, 'r')
-    data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime', 'updated_at'])
-    path = "models/waterlevel/"
-    model_base_path = os.path.join(settings.MEDIA_ROOT, path)
 
     # -------- make x and y vectors -------------
     def make_vectors(
@@ -429,88 +390,109 @@ def water_level(project_id, pred_id):
 
         return x_train, y_vector
 
-    x_vec, y_vec = make_vectors(
-        data=data,
-        horizontal_ti=horizontal_ti,
-        class_balancing=class_balancing
-    )
-    # -------------------------------------------
+    try:
+        # ------------------------------------------------
+        # ----------- Global Parameters ------------------
 
-    # ------ DataFrame Diff ----------------------
-    # Procedure for the Stationary Values.
-    # This procedure don't impact the other cases (S and SD).
-    x_vec_temp = x_vec.reset_index(drop=True)
-    x_vec_temp = x_vec_temp.diff(axis=1)
-    x_vec[x_vec_temp == 0.] = -1.
-    # ----------------------------------------------
+        # Split Methodology = 1 => random data, 75% for training and 25% for validation
+        # Split Methodology = 2 => ------------75%--------------- | --- 25% ---
+        split_methodology = 1
 
-    # -------------------- Split the vectors into x_train, x_est, y_train and y_test ---------------------------
-    if split_methodology == 1:
-        x_train, x_test, y_train, y_test = train_test_split(
-            x_vec, y_vec, test_size=0.25
+        # hti = the horizontal scale in hours
+        hti = 1
+        horizontal_ti = hti * 12
+
+        # Class balancing = True or False. If false then there will be a lot more "normal" data then anomalies and
+        # processing time will be much higher.
+        class_balancing = True
+
+        project = Project.objects.get(id=project_id)
+        csv_delimiter = project.delimiter
+        csv_file = os.path.join(settings.MEDIA_ROOT, project.dataset_file.name)
+        file = open(csv_file, 'r')
+        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime', 'updated_at'])
+        path = "models/waterlevel/"
+        model_base_path = os.path.join(settings.MEDIA_ROOT, path)
+
+        x_vec, y_vec = make_vectors(
+            data=data,
+            horizontal_ti=horizontal_ti,
+            class_balancing=class_balancing
+        )
+        # -------------------------------------------
+
+        # ------ DataFrame Diff ----------------------
+        # Procedure for the Stationary Values.
+        # This procedure don't impact the other cases (S and SD).
+        x_vec_temp = x_vec.reset_index(drop=True)
+        x_vec_temp = x_vec_temp.diff(axis=1)
+        x_vec[x_vec_temp == 0.] = -1.
+        # ----------------------------------------------
+
+        # -------------------- Split the vectors into x_train, x_est, y_train and y_test ---------------------------
+        if split_methodology == 1:
+            x_train, x_test, y_train, y_test = train_test_split(
+                x_vec, y_vec, test_size=0.25
+            )
+
+        if split_methodology == 2:
+            x_train, x_test, y_train, y_test = split_past_future_train_test(
+                x_vec, y_vec, test_size=0.25
+            )
+        # ----------------------------------------------------------------------------------------------------------
+
+        clf = KerasMLP().default_algorithm(
+            input_dim=x_train.shape[1],
+            out_dim=y_train.shape[1]
         )
 
-    if split_methodology == 2:
-        x_train, x_test, y_train, y_test = split_past_future_train_test(
-            x_vec, y_vec, test_size=0.25
+        # Fit the data
+        clf.train_model(
+            x_train=x_train,
+            y_train=y_train,
+            x_train_validation=x_test,
+            y_train_validation=y_test
         )
-    # ----------------------------------------------------------------------------------------------------------
 
-    clf = KerasMLP().default_algorithm(
-        input_dim=x_train.shape[1],
-        out_dim=y_train.shape[1]
-    )
+        predictions = clf.model.predict(x_test)
+        confusion_matrix = tensorflow.math.confusion_matrix(y_test.argmax(axis=1), predictions.argmax(axis=1))
+        confusion_matrix = np.array(confusion_matrix)
+        confusion_matrix = confusion_matrix / confusion_matrix.sum()
 
-    # Fit the data
-    clf.train_model(
-        x_train=x_train,
-        y_train=y_train,
-        x_train_validation=x_test,
-        y_train_validation=y_test
-    )
+        # For the Keras models
+        model_name = f"KerasMLP_{clf.model.name}_{str(pred_id)}.h5"
 
-    predictions = clf.model.predict(x_test)
-    confusion_matrix = tensorflow.math.confusion_matrix(y_test.argmax(axis=1), predictions.argmax(axis=1))
-    confusion_matrix = np.array(confusion_matrix)
-    confusion_matrix = confusion_matrix / confusion_matrix.sum()
+        filename_model = f'{model_base_path}/{project_id}'
 
-    # For the Keras models
-    model_name = f"KerasMLP_{clf.model.name}_{str(pred_id)}.h5"
+        def save_model_file(model, model_name, models_dir):
+            """ Method that saves the model on local directory """
 
-    filename_model = f'{model_base_path}/{project_id}'
+            # Checks if the directory of the models exists
+            if not os.path.exists(models_dir):
+                os.makedirs(models_dir)
 
-    def save_model_file(model, model_name, models_dir):
-        """ Method that saves the model on local directory """
+            # The full name = directory + name
+            full_model_name = f'{models_dir}/{model_name}'
 
-        # Checks if the directory of the models exists
-        if not os.path.exists(models_dir):
-            os.makedirs(models_dir)
+            # Save the new model
+            model.save(full_model_name)
 
-        # The full name = directory + name
-        full_model_name = f'{models_dir}/{model_name}'
+        # Save the models
+        save_model_file(
+            model_name=model_name, model=clf.model,
+            models_dir=os.path.dirname(filename_model)
+        )
 
-        # Save the new model
-        model.save(full_model_name)
+        accu = clf.estimator.history['acc'][-1]
+        # precision = metrics.precision_score(y_test, predictions)
+        # recall = metrics.recall_score(y_test, predictions)
+        # f1 = metrics.f1_score(y_test, predictions)
 
-    # Save the models
-    save_model_file(
-        model_name=model_name, model=clf.model,
-        models_dir=os.path.dirname(filename_model)
-    )
-
-    accu = clf.estimator.history['acc'][-1]
-    # precision = metrics.precision_score(y_test, predictions)
-    # recall = metrics.recall_score(y_test, predictions)
-    # f1 = metrics.f1_score(y_test, predictions)
-
-    disp = confusion_matrix
-
-    obj = ProjectPrediction.objects.get(id=pred_id)
-    obj.status = True
-    obj.confusion_matrix = disp
-    obj.accuracy = accu
-    # obj.precision = precision
-    # obj.recall = recall
-    # obj.f1_score = f1
-    obj.pickle = f'{os.path.dirname(filename_model)}/{model_name}'
-    obj.save()
+        output_file = f'{os.path.dirname(filename_model)}/{model_name}'
+        ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
+                                                            confusion_matrix=confusion_matrix,
+                                                            accuracy=accu,
+                                                            serialized_prediction_file=output_file)
+    except Exception as e:
+        print(f'train_water_level_prediction Error: {e}')
+        ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)

@@ -35,10 +35,10 @@
                       </thead>
                       <tbody>
                         <form method="post">
-                           {{ formset.management_form }}
-                           <b><font st color=red> {{ formset.non_form_errors }}</font></b>
+                           {{ project_feature_formset.management_form }}
+                           <b><font st color=red> {{ project_feature_formset.non_form_errors }}</font></b>
                            {% csrf_token %}
-                           {% for form in formset %}
+                           {% for form in project_feature_formset %}
                            {{ form.id }}
                            {{ form.column.as_hidden }}
                            <tr>

@@ -29,7 +29,6 @@ eggs/
 .eggs/
 lib/
 lib64/
-migrations/
 parts/
 sdist/
 var/
@@ -148,4 +147,5 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
-
+# Editor settings
+.vscode
