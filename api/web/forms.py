@@ -133,3 +133,7 @@ class ProjectFeatureInlineFormset(forms.BaseInlineFormSet):
 
         if input_columns_count == 0:
             raise forms.ValidationError('You have to select at least one input column.')
+
+
+class ProjectPredictionUploadFile(forms.Form):
+    file = forms.FileField()

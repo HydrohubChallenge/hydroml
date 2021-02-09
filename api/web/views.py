@@ -1,20 +1,22 @@
 import json
 import json as simplejson
 import os
+import pickle
 
 import pandas as pd
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.utils.translation import get_language
 
-from .forms import ProjectCreate, ProjectLabelCreate, ProjectFeatureInlineFormset
+from .forms import ProjectCreate, ProjectLabelCreate, ProjectFeatureInlineFormset, ProjectPredictionUploadFile
 from .models import Project, ProjectLabel, ProjectPrediction, ProjectFeature
 from .tasks import train_precipitation_prediction, train_water_level_prediction
 
+from keras.models import load_model
 
 @login_required
 def index(request):
@@ -69,7 +71,7 @@ def open_project(request, project_id):
         csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset_file.name)
         file = open(csv_file, 'r')
         df = pd.read_csv(file, delimiter=csv_delimiter)
-        df.fillna(0, inplace=True)
+        df.fillna('NaN', inplace=True)
         data = df.values.tolist()
         columnscsv = df.columns.values.tolist()
 
@@ -315,7 +317,7 @@ def delete_prediction(request, project_id, prediction_id):
 
 
 @login_required
-def download_prediction(request, prediction_id):
+def download_prediction(request, project_id, prediction_id):
     try:
         project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
     except ProjectPrediction.DoesNotExist:
@@ -351,3 +353,55 @@ def create_feature(request, project_id):
     }
 
     return render(request, "web/create_feature.html", content)
+
+
+@login_required
+def make_prediction(request, project_id, prediction_id):
+    if request.method == 'POST':
+        form = ProjectPredictionUploadFile(request.POST, request.FILES)
+        if form.is_valid():
+            handle_uploaded_file(request.FILES['file'], project_id, prediction_id)
+            return HttpResponseRedirect('')
+    else:
+        form = ProjectPredictionUploadFile()
+
+    try:
+        prediction = ProjectPrediction.objects.get(id=int(prediction_id))
+    except ProjectPrediction.DoesNotExist:
+        return redirect("index")
+
+    content = {
+        'form': form,
+        'prediction': prediction,
+    }
+
+    return render(request, "web/make_prediction.html", content)
+
+
+def handle_uploaded_file(file, project_id, prediction_id):
+    project_id = int(project_id)
+    prediction_id = int(prediction_id)
+
+    try:
+        project_sel = Project.objects.get(id=project_id)
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    try:
+        project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
+    except ProjectPrediction.DoesNotExist:
+        return redirect('index')
+
+    model_file = project_prediction.serialized_prediction_file.name
+
+    df = pd.read_csv(file, delimiter=',')
+
+    # if it's a Rainfall Project (1) import pickle
+    # if it's a Water Level Project (2) import keras model
+    if project_sel.type == 1:
+        loaded_model = pickle.load(open(model_file), 'rb')
+        prediction = loaded_model.pred(X_test)
+    elif project_sel.type == 2:
+        loaded_model = load_model(model_file)
+        # keras prediction
+

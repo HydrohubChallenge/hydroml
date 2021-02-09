@@ -81,27 +81,28 @@
                               </h3>
                             </div>
                             <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
-                              <div class="card-body" id="chartId" style="width:100%; height:400px;"></div>
+                              <div class="card-body" id="chartId" style="width:100%; height:400px; text-transform: capitalize;"></div>
                             </div>
                           </div>
 
                           <div class="card">
                             <div class="card-header bg-gradient-light" id="headingTwo">
                               <h3 class="mb-0">
-                                <button class="btn btn-link collapsed text-dark" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                <button class="btn btn-link collapsed text-dark" onclick="hot.render()" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
                                   Table
                                 </button>
                               </h3>
                             </div>
-                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
-                              <div class="card-body" id="data-table" style="padding-top: 0px;padding-left: 0px;padding-right: 0px;padding-bottom: 0px; width: 100%;"></div>
+                            <div id="collapseTwo" class="collapse clearfix" aria-labelledby="headingTwo" data-parent="#accordion">
+                                <button id="export-file" class="intext-btn btn btn-outline-primary float-xl-right" style="margin: 10px; margin-left: 0px;"><span class="fas fa-download" style="margin-right: 10px;"></span>Download CSV</button>
+                                <div class="card-body" id="data-table" style="margin-top:60px; padding: 0; width: 100%;"></div>
                             </div>
                           </div>
                         </div>
                     </div>
                     <div class="tab-pane fade" id="labels">
                         <a class="btn btn-outline-primary" href="{{ project.id }}/create_label/"
-                           style="margin: 10px; margin-left: 0px;">
+                           style="margin: 10px;">
                             <i class="fas fa-fw fa-plus"></i>
                             <span>New Label</span>
                         </a>
@@ -138,7 +139,7 @@
                     <div class="tab-pane fade" id="models">
                         <div style="margin: 10px; margin-left: 0px;">
                             <a type="button" class="btn btn-lg btn-success" href="{{ project.id }}/train/">Train Model</a>
-                            <div style="margin: 10px; margin-left: 0px;">
+                            <div class="table-responsive" style="margin: 10px; margin-left: 0px;">
                                 <!-- Table -->
                                 <table class="table table-hover" id="model-table">
                                     <thead>
@@ -151,6 +152,7 @@
                                             <th scope="col">Recall</th>
                                             <th scope="col">F1 Score</th>
                                             <th scope="col">Confusion Matrix</th>
+                                            <th scope="col"></th>
                                             <th scope="col"></th>
                                             <th scope="col"></th>
                                         </tr>
@@ -168,6 +170,7 @@
                                                 <td>{{ pred.recall }}</td>
                                                 <td>{{ pred.f1_score }}</td>
                                                 <td>{{ pred.confusion_matrix|linebreaksbr }}</td>
+                                                <td><a href="{{ project.id }}/prediction/{{ pred.id }}"><span class="fas fa-magic"></span></a></td>
                                                 <td><a href="{{ project.id }}/download/{{ pred.id }}" download><span class="fas fa-download"></span></a></td>
                                                 <td>
                                                     <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
@@ -190,6 +193,7 @@
                                                 <td></td>
                                                 <td></td>
                                                 <td></td>
+                                                <td></td>
                                                 <td>
                                                     <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
                                                        data-confirm="Do you really want to delete these prediction? This process cannot be undone.">
@@ -204,16 +208,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade   " id="Features">
+                    <div class="tab-pane fade" id="Features">
                         <div style="margin: 10px; margin-left: 0px;">
-
-                            <!-- <table class="table table-hover">
-                                {% for columnstest in columnscsv %}
-                                <tr>
-                                    <td>{{columnstest}}</td>
-                                </tr>
-                                {% endfor %} -->
-
                             <table class="table table-hover">
                                 <thead>
                                   <tr>
@@ -244,7 +240,6 @@
                                  </form>
                                </tbody>
                              </table>
-
                        </div>
                     </div>
 
@@ -275,19 +270,28 @@
 
         var size = values[0].length/10;
 
+        var chart_type;
+        {% if project.type == 1 %}
+            chart_type = 'column';
+        {% elif project.type == 2 %}
+            chart_type = 'spline';
+        {% endif %}
+        console.log(chart_type);
+
         const chart = Highcharts.chart('chartId', {
             chart: {
-                type: 'spline',
+                type: chart_type,
                 scrollablePlotArea: {
                     minWidth: size,
                     scrollPositionX: 1
                 }
             },
             boost: {
-                useGPUTranslations: true
+                useGPUTranslations: true,
+                usePreAllocated: true
             },
             title: {
-                text: 'Values measured'
+                text: 'Values Measured'
             },
             xAxis: {
                 type: 'datetime',
@@ -301,8 +305,7 @@
                 title: {
                     text: 'Measured',
                 },
-                lineWidth: 1,
-                opposite: true
+                lineWidth: 1
             },
             tooltip: {
                 valueSuffix: '',
@@ -385,12 +388,29 @@
         rowHeaders: true,
         filters: true,
         dropdownMenu: true,
-        viewportRowRenderingOffset: 100,
+        viewportRowRenderingOffset: 50,
         stretchH: 'all',
         licenseKey: 'non-commercial-and-evaluation',
     });
     Handsontable.dom.addEvent(window, 'hashchange', function (event) {
         hot.loadData(getData());
+    });
+    var button1 = document.getElementById('export-file');
+    var exportPlugin1 = hot.getPlugin('exportFile');
+
+    button1.addEventListener('click', function() {
+        exportPlugin1.downloadFile('csv', {
+            bom: false,
+            columnDelimiter: ',',
+            columnHeaders: true,
+            exportHiddenColumns: true,
+            exportHiddenRows: true,
+            fileExtension: 'csv',
+            filename: '{{ project.name|safe }}',
+            mimeType: 'text/csv',
+            rowDelimiter: '\r\n',
+            rowHeaders: true
+        });
     });
 
 </script>

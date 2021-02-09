@@ -28,7 +28,8 @@ urlpatterns = [
     path('project/<int:project_id>/update/<int:label_id>', views.update_label),
     path('project/<int:project_id>/clone/<int:label_id>', views.clone_label),
     path('project/<int:project_id>/delete/<int:label_id>', views.delete_label),
-    path('project/<int:project_id>/deletepred/<int:pred_id>', views.delete_prediction),
-    path('project/<int:project_id>/download/<int:pred_id>', views.download_prediction),
+    path('project/<int:project_id>/deletepred/<int:prediction_id>', views.delete_prediction),
+    path('project/<int:project_id>/download/<int:prediction_id>', views.download_prediction),
+    path('project/<int:project_id>/prediction/<int:prediction_id>', views.make_prediction),
     path('create_feature/<int:project_id>', views.create_feature, name='create-feature'),
 ]
