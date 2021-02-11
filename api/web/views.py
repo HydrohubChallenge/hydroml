@@ -1,8 +1,8 @@
 import json
 import json as simplejson
-import os
+import os, tempfile
 import pickle
-import tensorflow as tf
+
 import numpy as np
 
 import pandas as pd
@@ -310,7 +310,7 @@ def train_project(request, project_id):
 
 
 @login_required
-def delete_prediction(request, project_id, prediction_id):
+def delete_model(request, project_id, prediction_id):
     try:
         ProjectPrediction.objects.get(id=int(prediction_id)).delete()
     except ProjectPrediction.DoesNotExist:
@@ -320,7 +320,7 @@ def delete_prediction(request, project_id, prediction_id):
 
 
 @login_required
-def download_prediction(request, project_id, prediction_id):
+def download_model(request, project_id, prediction_id):
     try:
         project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
     except ProjectPrediction.DoesNotExist:
@@ -359,19 +359,29 @@ def create_feature(request, project_id):
 
 
 @login_required
+def download_prediction(request):
+    file_name = 'prediction.csv'
+    file_path = os.path.join(tempfile.gettempdir(), file_name)
+    if os.path.isfile(file_path):
+        response = FileResponse(open(file_path, 'rb'))
+        return response
+    else:
+        return redirect('index')
+
+@login_required
 def make_prediction(request, project_id, prediction_id):
+    file_name = 'prediction.csv'
+    file_path = os.path.join(tempfile.gettempdir(), file_name)
+    number_rows = 0
+    number_success = 0
     if request.method == 'POST':
         form = ProjectPredictionUploadFile(request.POST, request.FILES, project_id=project_id)
         if form.is_valid():
             file = request.FILES['file']
-            export_result = handle_uploaded_file(file, project_id, prediction_id)
+            export_result, number_rows, number_success = handle_uploaded_file(file, project_id, prediction_id)
 
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename=prediction.csv'
+            export_result.to_csv(path_or_buf=file_path)
 
-            export_result.to_csv(path_or_buf=response)
-
-            return response
     else:
         form = ProjectPredictionUploadFile()
 
@@ -383,6 +393,8 @@ def make_prediction(request, project_id, prediction_id):
     content = {
         'form': form,
         'prediction': prediction,
+        'number_rows': number_rows,
+        'number_success': number_success,
     }
 
     return render(request, "web/make_prediction.html", content)
@@ -406,23 +418,55 @@ def handle_uploaded_file(file, project_id, prediction_id):
 
     model_file = project_prediction.serialized_prediction_file.name
 
-    df = pd.read_csv(file, delimiter=project_sel.delimiter)
+    df = pd.read_csv(file, delimiter=project_sel.delimiter, parse_dates=["datetime"])
 
     input_column_names = []
 
     for project_feature in project_features:
         if project_feature.type == ProjectFeature.Type.INPUT:
             input_column_names.append(project_feature.column)
+        elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
+            input_column_names.append(project_feature.column)
 
-    X_test = df[input_column_names]
+    data_prediction = df[input_column_names]
 
     # if it's a Rainfall Project (1) import pickle
     # if it's a Water Level Project (2) import keras model
     if project_sel.type == 1:
+        # Static prediction
+        df_day = data_prediction.groupby([pd.Grouper(key="datetime", freq="2h"), "station", "station_id"]).sum()
+        df_day.reset_index(inplace=True)
+        df_day.groupby(['station']).agg({'datetime': [np.min, np.max]})
+
+        data = df_day[['station', 'measured', 'datetime']].pivot(index='datetime', columns='station', values='measured')
+        data.dropna(inplace=True)
+        data.sort_index(inplace=True)
+
+        def create_data_classification(df, columns, target, threshold):
+            columns = columns[columns != target]
+
+            df['avg'] = df[columns].mean(axis=1)
+
+            df.loc[df[target] > df['avg'] * (1 + threshold), 'label'] = 0
+            df.loc[df[target] <= df['avg'] * (1 + threshold), 'label'] = 1
+
+            df = df.astype({'label': np.int})
+
+            print(df.head())
+            return df
+
+        data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
+
+        X_test = data[['central_farm', 'chaa_creek', 'hawkesworth_bridge', 'santa_elena']]
+
+        number_rows = len(X_test.index)
         loaded_model = pickle.load(open(model_file, 'rb'))
         prediction = loaded_model.predict(X_test)
         prediction = pd.Series(prediction, name='prediction')
-        export_df = pd.concat([df, prediction], axis=1)
+        X_test.reset_index(inplace=True)
+        export_df = pd.concat([X_test, prediction], axis=1)
+        number_success = (prediction.values == 1).sum()
+
     elif project_sel.type == 2:
         loaded_model = load_model(model_file)
 
@@ -440,4 +484,4 @@ def handle_uploaded_file(file, project_id, prediction_id):
         prediction = pd.Series(prediction, name='prediction')
         export_df = pd.concat([df, prediction], axis=1)
 
-    return export_df
+    return export_df, number_rows, number_success

@@ -117,18 +117,21 @@
                                     <div class="rounded-circle" style="width: 2rem; height: 2rem; background-color:{{ label.color }};"></div>
                                 </td>
                                 <td>
-                                        <a href="{{ project.id }}/clone/{{label.id}}" id='{{label.id}}'>
+                                        <a href="{{ project.id }}/clone/{{label.id}}" id='{{label.id}}'
+                                           data-toggle="tooltip" data-placement="top" title="Clone Label">
                                         <span class="far fa-clone"></span>
                                     </a>
                                 </td>
                                 <td>
-                                        <a href="{{ project.id }}/update/{{label.id}}" id='{{label.id}}'>
+                                        <a href="{{ project.id }}/update/{{label.id}}" id='{{label.id}}'
+                                            data-toggle="tooltip" data-placement="top" title="Edit Label">
                                         <span class="fas fa-pencil-alt"></span>
                                     </a>
                                 </td>
                                 <td>
                                     <a href="{{ project.id }}/delete/{{label.id}}" class="delete"
-                                       data-confirm="Do you really want to delete these label? This process cannot be undone.">
+                                       data-confirm="Do you really want to delete these label? This process cannot be undone."
+                                       data-toggle="tooltip" data-placement="top" title="Delete Label">
                                         <span style="color: red;" class="fas fa-trash-alt"></span>
                                     </a>
                                 </td>
@@ -170,11 +173,14 @@
                                                 <td>{{ pred.recall }}</td>
                                                 <td>{{ pred.f1_score }}</td>
                                                 <td>{{ pred.confusion_matrix|linebreaksbr }}</td>
-                                                <td><a href="{{ project.id }}/prediction/{{ pred.id }}"><span class="fas fa-magic"></span></a></td>
-                                                <td><a href="{{ project.id }}/download/{{ pred.id }}" download><span class="fas fa-download"></span></a></td>
+                                                <td><a href="{{ project.id }}/prediction/{{ pred.id }}"
+                                                       data-toggle="tooltip" data-placement="top" title="Make Prediction"><span class="fas fa-magic"></span></a></td>
+                                                <td><a href="{{ project.id }}/download/{{ pred.id }}" download
+                                                       data-toggle="tooltip" data-placement="top" title="Download Model"><span class="fas fa-download"></span></a></td>
                                                 <td>
                                                     <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
-                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone.">
+                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone."
+                                                       data-toggle="tooltip" data-placement="top" title="Delete Model">
                                                         <span style="color: red;" class="fas fa-trash-alt"></span>
                                                     </a>
                                                 </td>
@@ -196,7 +202,8 @@
                                                 <td></td>
                                                 <td>
                                                     <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
-                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone.">
+                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone."
+                                                       data-toggle="tooltip" data-placement="top" title="Delete Model">
                                                         <span style="color: red;" class="fas fa-trash-alt"></span>
                                                     </a>
                                                 </td>
@@ -239,7 +246,7 @@
                                      </tr>
                                  </form>
                                </tbody>
-                             </table>
+                            </table>
                        </div>
                     </div>
 
@@ -258,6 +265,9 @@
 
 {% block javascript %}
 <script type="text/javascript">
+     $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
 
     document.addEventListener('DOMContentLoaded', function () {
         var categories = {{ categories|safe }};
@@ -321,7 +331,8 @@
             for(var i = 1; i < input_size; i++){
                 chart.addSeries({
                     name: input_columns[i],
-                    data: values[i]
+                    data: values[i],
+                    visible: false
                 });
             }
         }
@@ -386,6 +397,7 @@
         data: data,
         colHeaders: JSON.parse("{{columns|escapejs}}"),
         rowHeaders: true,
+        height: 620,
         filters: true,
         dropdownMenu: true,
         viewportRowRenderingOffset: 50,
@@ -395,6 +407,7 @@
     Handsontable.dom.addEvent(window, 'hashchange', function (event) {
         hot.loadData(getData());
     });
+
     var button1 = document.getElementById('export-file');
     var exportPlugin1 = hot.getPlugin('exportFile');
 

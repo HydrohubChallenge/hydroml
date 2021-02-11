@@ -31,7 +31,7 @@ def train_precipitation_prediction(project_id, pred_id):
         csv_delimiter = project.delimiter
         csv_file = os.path.join(settings.MEDIA_ROOT, project.dataset_file.name)
         file = open(csv_file, 'r')
-        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])
+        data_train = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])
         path = "models/precipitation/"
         model_base_path = os.path.join(settings.MEDIA_ROOT, path, str(project_id))
 
@@ -73,18 +73,38 @@ def train_precipitation_prediction(project_id, pred_id):
             elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
                 timestamp_column_name = project_feature.column
 
-        data.drop(skip_column_names, axis=1, inplace=True)
+        data_train.drop(skip_column_names, axis=1, inplace=True)
 
-        data = create_data_classification(data, np.array(input_column_names), target_column_name, 0.3)
+        df_day = data_train.groupby([pd.Grouper(key="datetime", freq="2h"), "station", "station_id"]).sum()
+
+        df_day.reset_index(inplace=True)
+        df_day.groupby(['station']).agg({'datetime': [np.min, np.max]})
+        data = df_day[['station', 'measured', 'datetime']].pivot(index='datetime', columns='station', values='measured')
+        data.dropna(inplace=True)
+
+        data.sort_index(inplace=True)
+
+        data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
 
         X_train, X_test, y_train, y_test = split_df(data,
-                                                    input_column_names,
-                                                    target_column_name,
+                                                    ['central_farm', 'chaa_creek', 'hawkesworth_bridge', 'santa_elena'],
+                                                    'label',
                                                     datetime.datetime(2020, 11, 1).date())
 
         clf = RandomForestClassifier(max_depth=7, n_estimators=250)
-        clf.fit(X_train, y_train.values.ravel())
-        # clf.fit(X_train, y_train)
+
+        clf.fit(X_train, y_train)
+
+        # Dynamic training
+        # data = create_data_classification(data, np.array(input_column_names), target_column_name, 0.3)
+        #
+        # X_train, X_test, y_train, y_test = split_df(data,
+        #                                             input_column_names,
+        #                                             target_column_name,
+        #                                             datetime.datetime(2020, 11, 1).date())
+        #
+        # clf = RandomForestClassifier(max_depth=7, n_estimators=250)
+        # clf.fit(X_train, y_train.values.ravel())
 
         y_pred = clf.predict(X_test)
 

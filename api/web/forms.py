@@ -154,10 +154,8 @@ class ProjectPredictionUploadFile(forms.Form):
         for project_feature in project_features:
             if project_feature.type == ProjectFeature.Type.INPUT:
                 input_column_names.append(project_feature.column)
-            elif project_feature.type == ProjectFeature.Type.TARGET:
-                target_column_name = project_feature.column
 
-        csv_pattern = input_column_names + [target_column_name]
+        csv_pattern = input_column_names
         csv_delimiter = project.delimiter
 
         uploaded_dataset = self.cleaned_data["file"]
