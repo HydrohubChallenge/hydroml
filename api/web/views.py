@@ -2,13 +2,15 @@ import json
 import json as simplejson
 import os
 import pickle
+import tensorflow as tf
+import numpy as np
 
 import pandas as pd
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
-from django.http import FileResponse, HttpResponseRedirect
+from django.http import FileResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.translation import get_language
 
@@ -17,6 +19,7 @@ from .models import Project, ProjectLabel, ProjectPrediction, ProjectFeature
 from .tasks import train_precipitation_prediction, train_water_level_prediction
 
 from keras.models import load_model
+
 
 @login_required
 def index(request):
@@ -358,10 +361,17 @@ def create_feature(request, project_id):
 @login_required
 def make_prediction(request, project_id, prediction_id):
     if request.method == 'POST':
-        form = ProjectPredictionUploadFile(request.POST, request.FILES)
+        form = ProjectPredictionUploadFile(request.POST, request.FILES, project_id=project_id)
         if form.is_valid():
-            handle_uploaded_file(request.FILES['file'], project_id, prediction_id)
-            return HttpResponseRedirect('')
+            file = request.FILES['file']
+            export_result = handle_uploaded_file(file, project_id, prediction_id)
+
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename=prediction.csv'
+
+            export_result.to_csv(path_or_buf=response)
+
+            return response
     else:
         form = ProjectPredictionUploadFile()
 
@@ -392,16 +402,42 @@ def handle_uploaded_file(file, project_id, prediction_id):
     except ProjectPrediction.DoesNotExist:
         return redirect('index')
 
+    project_features = ProjectFeature.objects.filter(project_id=project_id)
+
     model_file = project_prediction.serialized_prediction_file.name
 
-    df = pd.read_csv(file, delimiter=',')
+    df = pd.read_csv(file, delimiter=project_sel.delimiter)
+
+    input_column_names = []
+
+    for project_feature in project_features:
+        if project_feature.type == ProjectFeature.Type.INPUT:
+            input_column_names.append(project_feature.column)
+
+    X_test = df[input_column_names]
 
     # if it's a Rainfall Project (1) import pickle
     # if it's a Water Level Project (2) import keras model
     if project_sel.type == 1:
-        loaded_model = pickle.load(open(model_file), 'rb')
-        prediction = loaded_model.pred(X_test)
+        loaded_model = pickle.load(open(model_file, 'rb'))
+        prediction = loaded_model.predict(X_test)
+        prediction = pd.Series(prediction, name='prediction')
+        export_df = pd.concat([df, prediction], axis=1)
     elif project_sel.type == 2:
         loaded_model = load_model(model_file)
-        # keras prediction
 
+        for column in X_test.columns:
+            print(X_test[column].dtype)
+            if X_test[column].dtype == np.float64:
+                X_test[column] = np.asarray(X_test[column]).astype(np.float32)
+                print(X_test[column].dtype)
+            elif X_test[column].dtype == np.object:
+                X_test[column] = X_test[column].astype('|S')
+
+        print(X_test.dtypes)
+
+        loaded_model.predict(X_test)
+        prediction = pd.Series(prediction, name='prediction')
+        export_df = pd.concat([df, prediction], axis=1)
+
+    return export_df

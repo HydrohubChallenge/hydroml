@@ -41,11 +41,9 @@ def train_precipitation_prediction(project_id, pred_id):
             df_slice = df[df.datetime.dt.date < day]
             X_train = df_slice[x_columns]
             y_train = df_slice[y_column]
-
             df_slice = df[df.datetime.dt.date >= day]
             X_test = df_slice[x_columns]
             y_test = df_slice[y_column]
-
             return X_train, X_test, y_train, y_test
 
         def create_data_classification(df, columns, target, threshold):
@@ -63,6 +61,8 @@ def train_precipitation_prediction(project_id, pred_id):
         input_column_names = []
         skip_column_names = []
         target_column_name = None
+        timestamp_column_name = None
+
         for project_feature in project_features:
             if project_feature.type == ProjectFeature.Type.INPUT:
                 input_column_names.append(project_feature.column)
@@ -70,18 +70,21 @@ def train_precipitation_prediction(project_id, pred_id):
                 skip_column_names.append(project_feature.column)
             elif project_feature.type == ProjectFeature.Type.TARGET:
                 target_column_name = project_feature.column
+            elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
+                timestamp_column_name = project_feature.column
 
         data.drop(skip_column_names, axis=1, inplace=True)
 
         data = create_data_classification(data, np.array(input_column_names), target_column_name, 0.3)
 
         X_train, X_test, y_train, y_test = split_df(data,
-                                                    input_column_names + [target_column_name],
-                                                    'label',
+                                                    input_column_names,
+                                                    target_column_name,
                                                     datetime.datetime(2020, 11, 1).date())
 
         clf = RandomForestClassifier(max_depth=7, n_estimators=250)
         clf.fit(X_train, y_train.values.ravel())
+        # clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_test)
 
@@ -97,15 +100,10 @@ def train_precipitation_prediction(project_id, pred_id):
         with open(filename_model, "wb") as f:
             pickle.dump(clf, f)
 
-        class_names = [0, 1]
-
-        disp = metrics.plot_confusion_matrix(clf, X_test, y_test,
-                                             display_labels=class_names,
-                                             cmap=plt.cm.Blues,
-                                             normalize='true')
+        disp = metrics.confusion_matrix(y_test, y_pred, normalize='true')
 
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
-                                                            confusion_matrix=disp.confusion_matrix,
+                                                            confusion_matrix=disp,
                                                             accuracy=accu,
                                                             precision=precision,
                                                             recall=recall,

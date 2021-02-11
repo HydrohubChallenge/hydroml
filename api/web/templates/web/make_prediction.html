@@ -46,6 +46,9 @@
                         </table>
                     </form>
                 </div>
+                {% if export == True %}
+                    <a href="{{download}}" download>{{download}}</span></a></td>
+                {% endif %}
             </div>
     </div>
     <!-- /.content -->
