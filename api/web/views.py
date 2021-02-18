@@ -368,6 +368,7 @@ def download_prediction(request):
     else:
         return redirect('index')
 
+
 @login_required
 def make_prediction(request, project_id, prediction_id):
     file_name = 'prediction.csv'
@@ -425,46 +426,19 @@ def handle_uploaded_file(file, project_id, prediction_id):
     for project_feature in project_features:
         if project_feature.type == ProjectFeature.Type.INPUT:
             input_column_names.append(project_feature.column)
-        elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
-            input_column_names.append(project_feature.column)
 
     data_prediction = df[input_column_names]
 
     # if it's a Rainfall Project (1) import pickle
     # if it's a Water Level Project (2) import keras model
     if project_sel.type == 1:
-        # Static prediction
-        df_day = data_prediction.groupby([pd.Grouper(key="datetime", freq="2h"), "station", "station_id"]).sum()
-        df_day.reset_index(inplace=True)
-        df_day.groupby(['station']).agg({'datetime': [np.min, np.max]})
 
-        data = df_day[['station', 'measured', 'datetime']].pivot(index='datetime', columns='station', values='measured')
-        data.dropna(inplace=True)
-        data.sort_index(inplace=True)
-
-        def create_data_classification(df, columns, target, threshold):
-            columns = columns[columns != target]
-
-            df['avg'] = df[columns].mean(axis=1)
-
-            df.loc[df[target] > df['avg'] * (1 + threshold), 'label'] = 0
-            df.loc[df[target] <= df['avg'] * (1 + threshold), 'label'] = 1
-
-            df = df.astype({'label': np.int})
-
-            print(df.head())
-            return df
-
-        data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
-
-        X_test = data[['central_farm', 'chaa_creek', 'hawkesworth_bridge', 'santa_elena']]
-
-        number_rows = len(X_test.index)
+        number_rows = len(data_prediction.index)
         loaded_model = pickle.load(open(model_file, 'rb'))
-        prediction = loaded_model.predict(X_test)
+        prediction = loaded_model.predict(data_prediction)
         prediction = pd.Series(prediction, name='prediction')
-        X_test.reset_index(inplace=True)
-        export_df = pd.concat([X_test, prediction], axis=1)
+        data_prediction.reset_index(inplace=True)
+        export_df = pd.concat([data_prediction, prediction], axis=1)
         number_success = (prediction.values == 1).sum()
 
     elif project_sel.type == 2:

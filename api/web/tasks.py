@@ -21,7 +21,6 @@ from sklearn.preprocessing import label_binarize
 from .models import Project, ProjectPrediction
 from .models import ProjectFeature
 
-
 @shared_task
 def train_precipitation_prediction(project_id, pred_id):
     try:
@@ -46,18 +45,6 @@ def train_precipitation_prediction(project_id, pred_id):
             y_test = df_slice[y_column]
             return X_train, X_test, y_train, y_test
 
-        def create_data_classification(df, columns, target, threshold):
-            columns = columns[columns != target]
-
-            df['avg'] = df[columns].mean(axis=1)
-
-            df.loc[df[target] > df['avg'] * (1 + threshold), 'label'] = 0
-            df.loc[df[target] <= df['avg'] * (1 + threshold), 'label'] = 1
-
-            df = df.astype({'label': np.int})
-
-            return df
-
         input_column_names = []
         skip_column_names = []
         target_column_name = None
@@ -73,38 +60,17 @@ def train_precipitation_prediction(project_id, pred_id):
             elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
                 timestamp_column_name = project_feature.column
 
-        data_train.drop(skip_column_names, axis=1, inplace=True)
+        if len(skip_column_names) > 0:
+            data_train.drop(skip_column_names, axis=1, inplace=True)
 
-        df_day = data_train.groupby([pd.Grouper(key="datetime", freq="2h"), "station", "station_id"]).sum()
-
-        df_day.reset_index(inplace=True)
-        df_day.groupby(['station']).agg({'datetime': [np.min, np.max]})
-        data = df_day[['station', 'measured', 'datetime']].pivot(index='datetime', columns='station', values='measured')
-        data.dropna(inplace=True)
-
-        data.sort_index(inplace=True)
-
-        data = create_data_classification(data, np.array(['hawkesworth_bridge']), 'santa_elena', 0.3)
-
-        X_train, X_test, y_train, y_test = split_df(data,
-                                                    ['central_farm', 'chaa_creek', 'hawkesworth_bridge', 'santa_elena'],
-                                                    'label',
+        X_train, X_test, y_train, y_test = split_df(data_train,
+                                                    input_column_names,
+                                                    target_column_name,
                                                     datetime.datetime(2020, 11, 1).date())
 
         clf = RandomForestClassifier(max_depth=7, n_estimators=250)
 
         clf.fit(X_train, y_train)
-
-        # Dynamic training
-        # data = create_data_classification(data, np.array(input_column_names), target_column_name, 0.3)
-        #
-        # X_train, X_test, y_train, y_test = split_df(data,
-        #                                             input_column_names,
-        #                                             target_column_name,
-        #                                             datetime.datetime(2020, 11, 1).date())
-        #
-        # clf = RandomForestClassifier(max_depth=7, n_estimators=250)
-        # clf.fit(X_train, y_train.values.ravel())
 
         y_pred = clf.predict(X_test)
 
@@ -132,6 +98,7 @@ def train_precipitation_prediction(project_id, pred_id):
     except Exception as e:
         print(f'train_precipitation_prediction Error: {e}')
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)
+
 
 
 @shared_task

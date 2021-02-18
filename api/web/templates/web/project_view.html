@@ -278,7 +278,9 @@
 
         categories = categories.map(cat=>new Date(cat));
 
-        var size = values[0].length/10;
+        var size = values[0].length;
+
+
 
         var chart_type;
         {% if project.type == 1 %}
@@ -291,6 +293,7 @@
         const chart = Highcharts.chart('chartId', {
             chart: {
                 type: chart_type,
+                zoomType: 'x',
                 scrollablePlotArea: {
                     minWidth: size,
                     scrollPositionX: 1
@@ -309,7 +312,7 @@
                     overflow: 'justify'
                 },
                 categories: categories,
-                tickInterval: 100
+                tickInterval: 5
               },
             yAxis: {
                 title: {
