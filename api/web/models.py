@@ -140,6 +140,22 @@ class ProjectPrediction(BaseModel):
         upload_to=serialized_prediction_directory_path,
     )
 
+    input_features = models.TextField(
+        null=True,
+    )
+
+    timestamp_features = models.TextField(
+        null=True,
+    )
+
+    skip_features = models.TextField(
+        null=True,
+    )
+
+    target_features = models.TextField(
+        null=True,
+    )
+
     def __str__(self):
         return f'{self.project} - {self.id}'
 

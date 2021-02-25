@@ -1,0 +1,13 @@
+{% extends 'web/project_view.html' %}
+
+{% load i18n %}
+
+{% block metadata_link %}active disabled{% endblock %}
+
+{% block metadata_class %}show active{% endblock %}
+
+{% block metadata_content %}
+ <div style="margin: 10px; margin-left: 0px;">
+     <p>{{ metadata }}</p>
+ </div>
+{% endblock %}

@@ -65,93 +65,6 @@ def create(request):
         return render(request, "web/create_form.html", {"create_form": create_project_form, "method": 'create'})
 
 
-def open_project(request, project_id):
-    project_id = int(project_id)
-    tab = request.GET.get('tab')
-    try:
-        project_sel = Project.objects.get(id=project_id)
-        csv_delimiter = project_sel.delimiter
-        csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset_file.name)
-        file = open(csv_file, 'r')
-        df = pd.read_csv(file, delimiter=csv_delimiter)
-        df.fillna('NaN', inplace=True)
-        data = df.values.tolist()
-        columnscsv = df.columns.values.tolist()
-
-        data = json.dumps(data)
-        columns = json.dumps(columnscsv)
-
-        labels = ProjectLabel.objects.filter(project=project_id)
-
-        predictions = ProjectPrediction.objects.filter(project=project_id)
-
-        project_feature_formset_factory = inlineformset_factory(Project, ProjectFeature, fields=(
-            'type', 'column'), extra=0, formset=ProjectFeatureInlineFormset)
-
-        if request.method == 'POST':
-            project_feature_formset = project_feature_formset_factory(
-                request.POST, instance=project_sel)
-            if project_feature_formset.is_valid():
-                project_feature_formset.save()
-        else:
-            project_feature_formset = project_feature_formset_factory(
-                instance=project_sel)
-
-        try:
-            project_features = ProjectFeature.objects.filter(project_id=project_id)
-
-            input = []
-            timestamp = None
-            for project_feature in project_features:
-                if project_feature.type == ProjectFeature.Type.TIMESTAMP:
-                    timestamp = project_feature.column
-                elif project_feature.type == ProjectFeature.Type.INPUT:
-                    input.append(project_feature.column)
-
-            input_size = len(input)
-
-            categories = list(df[timestamp])
-
-            values_list = []
-
-            for c in input:
-                values = list(df[c])
-                values_list.append(values)
-
-            json_list = simplejson.dumps(values_list)
-
-            content = {
-                'loaded_data': data,
-                'columns': columns,
-                'project': project_sel,
-                'labels': labels,
-                'predictions': predictions,
-                'tab': tab,
-                'columnscsv': columnscsv,
-                'project_feature_formset': project_feature_formset,
-                'categories': categories,
-                'values': json_list,
-                'input_size': input_size,
-                'input_columns': input,
-            }
-        except ProjectFeature.DoesNotExist:
-            content = {
-                'loaded_data': data,
-                'columns': columns,
-                'project': project_sel,
-                'labels': labels,
-                'predictions': predictions,
-                'tab': tab,
-                'columnscsv': columnscsv,
-                'project_feature_formset': project_feature_formset,
-            }
-
-    except Project.DoesNotExist:
-        return redirect("index")
-
-    return render(request, "web/project_view.html", content)
-
-
 @login_required
 def update_project(request, project_id):
     project_id = int(project_id)
@@ -229,7 +142,7 @@ def create_label(request, project_id):
             obj = create_label_form.save(commit=False)
             obj.project_id = project_id
             obj.save()
-            return redirect('open-project', project_id=project_id)
+            return redirect('labels-tab', project_id=project_id)
         else:
             content = {"create_label": create_label_form}
             return render(request, "web/create_label.html", content)
@@ -245,14 +158,14 @@ def update_label(request, project_id, label_id):
     try:
         project_label = ProjectLabel.objects.get(id=label_id)
     except ProjectLabel.DoesNotExist:
-        return redirect('open-project', project_id=project_id)
+        return redirect('labels-tab', project_id=project_id)
     if request.method == 'POST':
         label_form = ProjectLabelCreate(request.POST, instance=project_label)
 
         if label_form.is_valid():
             label_form.save()
 
-            return redirect('open-project', project_id=project_id)
+            return redirect('labels-tab', project_id=project_id)
 
     else:
         label_form = ProjectLabelCreate(instance=project_label)
@@ -266,13 +179,13 @@ def clone_label(request, project_id, label_id):
     try:
         project_label = ProjectLabel.objects.get(id=int(label_id))
     except ProjectLabel.DoesNotExist:
-        return redirect('open-project', project_id=project_id)
+        return redirect('labels-tab', project_id=project_id)
     project_label.id = None
     project_label.pk = None
     new_name = project_label.name + " (copy)"
     project_label.name = new_name
     project_label.save()
-    return redirect('open-project', project_id=project_id)
+    return redirect('labels-tab', project_id=project_id)
 
 
 @login_required
@@ -280,8 +193,8 @@ def delete_label(request, project_id, label_id):
     try:
         ProjectLabel.objects.get(id=int(label_id)).delete()
     except ProjectLabel.DoesNotExist:
-        return redirect('open-project', project_id=project_id)
-    return redirect('open-project', project_id=project_id)
+        return redirect('labels-tab', project_id=project_id)
+    return redirect('labels-tab', project_id=project_id)
 
 
 @login_required
@@ -306,7 +219,7 @@ def train_project(request, project_id):
 
     messages.add_message(request, messages.SUCCESS, 'New training started')
 
-    return redirect('open-project', project_id=project_id)
+    return redirect('models-tab', project_id=project_id)
 
 
 @login_required
@@ -316,11 +229,11 @@ def delete_model(request, project_id, prediction_id):
     except ProjectPrediction.DoesNotExist:
         return redirect('index')
 
-    return redirect('open-project', project_id=project_id)
+    return redirect('models-tab', project_id=project_id)
 
 
 @login_required
-def download_model(request, project_id, prediction_id):
+def download_model(request, prediction_id):
     try:
         project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
     except ProjectPrediction.DoesNotExist:
@@ -429,9 +342,9 @@ def handle_uploaded_file(file, project_id, prediction_id):
 
     data_prediction = df[input_column_names]
 
-    # if it's a Rainfall Project (1) import pickle
-    # if it's a Water Level Project (2) import keras model
-    if project_sel.type == 1:
+    # if it's a Rainfall Project import pickle
+    # if it's a Water Level Project import keras model
+    if project_sel.type == Project.Type.RAINFALL:
 
         number_rows = len(data_prediction.index)
         loaded_model = pickle.load(open(model_file, 'rb'))
@@ -441,21 +354,182 @@ def handle_uploaded_file(file, project_id, prediction_id):
         export_df = pd.concat([data_prediction, prediction], axis=1)
         number_success = (prediction.values == 1).sum()
 
-    elif project_sel.type == 2:
+    elif project_sel.type == Project.Type.WATER_LEVEL:
         loaded_model = load_model(model_file)
 
         for column in X_test.columns:
-            print(X_test[column].dtype)
             if X_test[column].dtype == np.float64:
                 X_test[column] = np.asarray(X_test[column]).astype(np.float32)
-                print(X_test[column].dtype)
             elif X_test[column].dtype == np.object:
                 X_test[column] = X_test[column].astype('|S')
-
-        print(X_test.dtypes)
 
         loaded_model.predict(X_test)
         prediction = pd.Series(prediction, name='prediction')
         export_df = pd.concat([df, prediction], axis=1)
 
     return export_df, number_rows, number_success
+
+
+@login_required
+def data_tab(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+        csv_delimiter = project_sel.delimiter
+        csv_file = os.path.join(settings.MEDIA_ROOT, project_sel.dataset_file.name)
+        file = open(csv_file, 'r')
+        df = pd.read_csv(file, delimiter=csv_delimiter)
+        df.fillna('NaN', inplace=True)
+        data = df.values.tolist()
+        columns = df.columns.values.tolist()
+
+        data_js = json.dumps(data)
+        columns_js = json.dumps(columns)
+
+        try:
+            project_features = ProjectFeature.objects.filter(project_id=project_id)
+
+            input_columns = []
+            timestamp = None
+            for project_feature in project_features:
+                if project_feature.type == ProjectFeature.Type.TIMESTAMP:
+                    timestamp = project_feature.column
+                elif project_feature.type == ProjectFeature.Type.INPUT:
+                    input_columns.append(project_feature.column)
+
+            input_size = len(input_columns)
+
+            categories = list(df[timestamp])
+
+            values_list = []
+
+            for c in input_columns:
+                values = list(df[c])
+                values_list.append(values)
+
+            json_list = simplejson.dumps(values_list)
+
+            content = {
+                'loaded_data': data_js,
+                'columns_js': columns_js,
+                'project': project_sel,
+                'categories': categories,
+                'values': json_list,
+                'input_size': input_size,
+                'input_columns': input_columns,
+            }
+        except ProjectFeature.DoesNotExist:
+            content = {
+                'loaded_data': data,
+                'columns': columns,
+                'project': project_sel,
+            }
+
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    return render(request, "web/data_tab.html", content)
+
+
+@login_required
+def metadata_tab(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    content = {
+        'project': project_sel,
+        'metadata': "Metadata tab",
+    }
+
+    return render(request, "web/metadata_tab.html", content)
+
+
+@login_required
+def features_tab(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+
+        project_feature_formset_factory = inlineformset_factory(Project, ProjectFeature, fields=(
+            'type', 'column'), extra=0, formset=ProjectFeatureInlineFormset)
+
+        if request.method == 'POST':
+            project_feature_formset = project_feature_formset_factory(
+                request.POST, instance=project_sel)
+            if project_feature_formset.is_valid():
+                project_feature_formset.save()
+        else:
+            project_feature_formset = project_feature_formset_factory(
+                instance=project_sel)
+
+        content = {
+            'project': project_sel,
+            'project_feature_formset': project_feature_formset,
+        }
+
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    return render(request, "web/features_tab.html", content)
+
+
+@login_required
+def labels_tab(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+        labels = ProjectLabel.objects.filter(project=project_id)
+
+        content = {
+            'project': project_sel,
+            'labels': labels,
+        }
+
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    return render(request, "web/labels_tab.html", content)
+
+
+@login_required
+def models_tab(request, project_id):
+    project_id = int(project_id)
+    try:
+        project_sel = Project.objects.get(id=project_id)
+
+        predictions = ProjectPrediction.objects.filter(project=project_id)
+
+        project_feature_formset_factory = inlineformset_factory(Project, ProjectFeature, fields=(
+            'type', 'column'), extra=0, formset=ProjectFeatureInlineFormset)
+
+        if request.method == 'POST':
+            project_feature_formset = project_feature_formset_factory(
+                request.POST, instance=project_sel)
+            if project_feature_formset.is_valid():
+                project_feature_formset.save()
+                return redirect('train-project', project_id=project_id)
+            else:
+                messages.add_message(request, messages.ERROR, project_feature_formset.non_form_errors())
+
+        else:
+            project_feature_formset = project_feature_formset_factory(
+                instance=project_sel)
+
+        for pred in predictions:
+            print(pred.confusion_matrix)
+            m1 = pred.confusion_matrix.translate({ord('['): None, ord(']'): None, ord(' '): ','})
+            print(m1)
+
+        content = {
+            'project': project_sel,
+            'project_feature_formset': project_feature_formset,
+            'predictions': predictions,
+        }
+
+    except Project.DoesNotExist:
+        return redirect("index")
+
+    return render(request, "web/models_tab.html", content)

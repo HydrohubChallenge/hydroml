@@ -1,0 +1,47 @@
+{% extends 'web/project_view.html' %}
+
+{% load i18n %}
+
+{% block features_link %}active disabled{% endblock %}
+
+{% block features_class %}show active{% endblock %}
+
+{% block features_content %}
+<div style="margin: 10px; margin-left: 0px;">
+      <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">COLUMN</th>
+              <th scope="col">FEATURES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <form method="post">
+               {{ project_feature_formset.management_form }}
+               <b><font st color=red> {{ project_feature_formset.non_form_errors }}</font></b>
+               {% csrf_token %}
+               {% for form in project_feature_formset %}
+               {{ form.id }}
+               {{ form.column.as_hidden }}
+               <tr>
+                 <td>{{ form.column.value }}</td>
+                 <td>{{form.type}}</td>
+                 <td></td>
+               </tr>
+               {% endfor %}
+               <tr>
+                 <td></td>
+                 <td>
+                     <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
+                 </td>
+               </tr>
+           </form>
+         </tbody>
+      </table>
+ </div>
+
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript"></script>
+{% endblock javascript %}

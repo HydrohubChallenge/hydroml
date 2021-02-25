@@ -1,0 +1,276 @@
+{% extends 'web/project_view.html' %}
+
+{% load i18n %}
+
+{% block messages %}
+    {% if messages %}
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog"
+         aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                {% for message in messages %}
+                <div class="modal-header {{message.tags}}">
+                    {% if message.tags == 'alert-success' %}
+                        <h5 class="modal-title text-light"><strong>Success</strong></h5>
+                    {% elif message.tags == 'alert-danger' %}
+                        <h5 class="modal-title text-light"><strong>Error</strong></h5>
+                    {% endif %}
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+                </div>
+                <div class="modal-body">
+                     <ul class="messages {% if message.tags == 'alert-danger' %}text-danger{% endif %}">
+                         <strong>{{ message }}</strong>
+                     </ul>
+                </div>
+                <div class="modal-footer">
+                    <a type="button" class="btn btn-primary" data-dismiss="modal">Close</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block models_link %}active disabled{% endblock %}
+
+{% block models_class %}show active{% endblock %}
+
+{% block models_content %}
+<div style="margin: 10px; margin-left: 0px;">
+    <button class="btn btn-lg btn-success trainButton">Train Model</button>
+
+    <div id="trainModal" class="modal fade" tabindex="-1" role="dialog"
+         aria-labelledby="trainModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Features</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">COLUMN</th>
+                          <th scope="col">FEATURES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <form method="post">
+                           {{ project_feature_formset.management_form }}
+                           {% csrf_token %}
+                           {% for form in project_feature_formset %}
+                           {{ form.id }}
+                           {{ form.column.as_hidden }}
+                           <tr>
+                             <td>{{ form.column.value }}</td>
+                             <td>{{form.type}}</td>
+                             <td></td>
+                           </tr>
+                           {% endfor %}
+                           <tr>
+                             <td>
+                                 <button type="button" class="btn btn-danger" data-dismiss="modal" style="width: 150px;">Cancel</button>
+                             </td>
+                             <td>
+                                 <button class="btn btn-success" type="submit" style="width: 150px;">
+                                     {% translate " Start Training" %}
+                                 </button>
+                             </td>
+                           </tr>
+                       </form>
+                      </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive" style="margin: 10px; margin-left: 0px;">
+        <!-- Table -->
+        <table class="table" id="model-table">
+            <thead>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col" class="text-center">Start</th>
+                    <th scope="col" class="text-center">Finish</th>
+                    <th scope="col" class="text-center">Accuracy</th>
+                    <th scope="col" class="text-center">Precision</th>
+                    <th scope="col" class="text-center">Recall</th>
+                    <th scope="col" class="text-center">F1 Score</th>
+                    <th scope="col" class="text-center">Confusion Matrix</th>
+                    <th scope="col" class="text-center">Input</th>
+                    <th scope="col" class="text-center">Target</th>
+                    <th scope="col" class="text-center">Skip</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pred in predictions %}
+                    {% if pred.status == 1 %}
+                    <tr>
+                        <td><span class="badge badge-success">Success</span></td>
+                        <td class="text-center">{{ pred.created_at|date:"d/m/Y g:i:s a" }}</td>
+                        <td class="text-center">{{ pred.updated_at|date:"d/m/Y g:i:s a" }}</td>
+                        <td class="text-center">{{ pred.accuracy|stringformat:".4f" }}</td>
+                        <td class="text-center">{{ pred.precision|stringformat:".4f" }}</td>
+                        <td class="text-center">{{ pred.recall|stringformat:".4f" }}</td>
+                        <td class="text-center">{{ pred.f1_score|stringformat:".4f" }}</td>
+                        <td class="text-center">
+                            {% with cm=pred.confusion_matrix|cut:"["|cut:"]" %}
+                            <table class="table table-bordered mb-0">
+                                <tr>
+                                    <td class="text-center">
+                                        {{cm|slice:":7"}}
+                                    </td>
+                                    <td class="text-center">
+                                        {{cm|slice:"7:15"}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">
+                                        {{cm|slice:"15:21"}}
+                                    </td>
+                                    <td class="text-center">
+                                        {{cm|slice:"22:28"}}
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endwith %}
+                        </td>
+                        <td class="text-center">
+                            {{ pred.input_features|linebreaksbr }}
+                        </td>
+                        <td class="text-center">
+                            {{ pred.target_features }}
+                        </td>
+                        <td class="text-center">
+                            {% if pred.skip_features|length_is:"0" %}
+                                -
+                            {% else %}
+                                {{ pred.skip_features|linebreaksbr }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'make-prediction' project_id=project.id prediction_id=pred.id %}"
+                               data-toggle="tooltip" data-placement="top" title="Make Prediction">
+                                <span class="fas fa-magic"></span>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'download-model' prediction_id=pred.id %}" download
+                               data-toggle="tooltip" data-placement="top" title="Download Model">
+                                <span class="fas fa-download"></span>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'delete-model' project_id=project.id prediction_id=pred.id %}" class="delete"
+                               data-confirm="Do you really want to delete these prediction? This process cannot be undone."
+                               data-toggle="tooltip" data-placement="top" title="Delete Model">
+                                <span style="color: red;" class="fas fa-trash-alt"></span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        {% if pred.status == 2%}
+                          <td><span class="badge badge-warning">Training</span></td>
+                        {% elif pred.status == 3%}
+                            <td><span class="badge badge-danger">Error</span></td>
+                        {% endif %}
+                        <td>{{ pred.created_at }}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <a href="{% url 'delete-model' project_id=project.id prediction_id=pred.id %}" class="delete"
+                               data-confirm="Do you really want to delete these prediction? This process cannot be undone."
+                               data-toggle="tooltip" data-placement="top" title="Delete Model">
+                                <span style="color: red;" class="fas fa-trash-alt"></span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<!-- Datatables -->
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https:/cdn.datatables.net/plug-ins/1.10.12/sorting/datetime-moment.js"></script>
+<script type="text/javascript">
+
+    $(document).on("click", ".trainButton", function (e) {
+        e.preventDefault();
+        $('#trainModal').modal({show:true});
+    });
+
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+
+    var deleteLinks = document.querySelectorAll('.delete');
+
+    for (var i = 0; i < deleteLinks.length; i++) {
+      deleteLinks[i].addEventListener('click', function(event) {
+          event.preventDefault();
+
+          var choice = confirm(this.getAttribute('data-confirm'));
+
+          if (choice) {
+            window.location.href = this.getAttribute('href');
+          }
+      });
+    }
+
+     $(document).ready(function(){
+        $('#messageModal').modal({show:true});
+    });
+
+     $(document).ready( function () {
+        $.fn.dataTable.moment('MMM. D, YYYY, H:mm a');
+        $('#model-table').DataTable({
+             searching: false,
+             paging: false,
+             "lengthChange": false,
+             "order": [[ 1, "desc" ]],
+             columns: [
+                 { orderable: false },
+                 null,
+                 null,
+                 null,
+                 null,
+                 null,
+                 null,
+                 null,
+                 null,
+                 null,
+                 null,
+                 { orderable: false },
+                 { orderable: false },
+                 { orderable: false }
+              ]
+        });
+     } );
+</script>
+{% endblock javascript%}

@@ -21,30 +21,7 @@
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
-        {% if messages %}
-        <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                    <h5 class="modal-title" id="MessageTitle">Success</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                    </div>
-                    <div class="modal-body">
-                         <ul class="messages">
-                            {% for message in messages %}
-                              {{ message }}
-                            {% endfor %}
-                         </ul>
-                    </div>
-                    <div class="modal-footer">
-                        <a type="button" class="btn btn-primary" data-dismiss="modal">Close</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+        {% block messages %}{% endblock %}
     </div>
     <!-- /.content-header -->
     <!-- Main content -->
@@ -52,208 +29,38 @@
         <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem;margin: 30px; padding:10px; margin-left: 0px;">
 
                 <ul class="nav nav-tabs" id="projectTab">
-                    <li class="nav-item active">
-                        <a class="nav-link active text-secondary" data-toggle="tab" href="#data">{% translate "Data" %}</a>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary {% block data_link %}{% endblock %}" href="{% url 'data-tab' project_id=project.id %}">{% translate "Data" %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" data-toggle="tab" href="#Features">{% translate "Features" %}</a>
+                        <a class="nav-link text-secondary {% block features_link %}{% endblock %}" href="{% url 'features-tab' project_id=project.id %}">{% translate "Features" %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" data-toggle="tab" href="#labels">{% translate "Labels" %}</a>
+                        <a class="nav-link text-secondary {% block labels_link %}{% endblock %}" href="{% url 'labels-tab' project_id=project.id %}">{% translate "Labels" %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" data-toggle="tab" href="#models">{% translate "Models" %}</a>
+                        <a class="nav-link text-secondary {% block models_link %}{% endblock %}" href="{% url 'models-tab' project_id=project.id %}">{% translate "Models" %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" data-toggle="tab" href="#metadata">{% translate "Metadata" %}</a>
+                        <a class="nav-link text-secondary {% block metadata_link %}{% endblock %}" href="{% url 'metadata-tab' project_id=project.id %}">{% translate "Metadata" %}</a>
                     </li>
                 </ul>
 
                 <div class="tab-content">
-                    <div class="tab-pane fade show active" id="data">
-                        <div id="accordion" style="margin-top: 10px;">
-                          <div class="card">
-                            <div class="card-header bg-gradient-light" id="headingOne">
-                              <h3 class="mb-0">
-                                <button class="btn btn-link collapsed text-dark" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                                  Chart
-                                </button>
-                              </h3>
-                            </div>
-                            <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
-                              <div class="card-body" id="chartId" style="width:100%; height:400px; text-transform: capitalize;"></div>
-                            </div>
-                          </div>
-
-                          <div class="card">
-                            <div class="card-header bg-gradient-light" id="headingTwo">
-                              <h3 class="mb-0">
-                                <button class="btn btn-link collapsed text-dark" onclick="hot.render()" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                  Table
-                                </button>
-                              </h3>
-                            </div>
-                            <div id="collapseTwo" class="collapse clearfix" aria-labelledby="headingTwo" data-parent="#accordion">
-                                <button id="export-file" class="intext-btn btn btn-outline-primary float-xl-right" style="margin: 10px; margin-left: 0px;"><span class="fas fa-download" style="margin-right: 10px;"></span>Download CSV</button>
-                                <div class="card-body" id="data-table" style="margin-top:60px; padding: 0; width: 100%;"></div>
-                            </div>
-                          </div>
-                        </div>
+                    <div class="tab-pane fade {% block data_class %}{% endblock %}" id="data">
+                        {% block data_content %}{% endblock %}
                     </div>
-                    <div class="tab-pane fade" id="labels">
-                        <a class="btn btn-outline-primary" href="{{ project.id }}/create_label/"
-                           style="margin: 10px;">
-                            <i class="fas fa-fw fa-plus"></i>
-                            <span>New Label</span>
-                        </a>
-
-                        <!-- Table -->
-                        <table class="table table-hover">
-                            {% for label in labels %}
-                            <tr>
-                                <td>{{ label.name }}</td>
-                                <td>{{ label.description }}</td>
-                                <td style="text-align: center;">
-                                    <div class="rounded-circle" style="width: 2rem; height: 2rem; background-color:{{ label.color }};"></div>
-                                </td>
-                                <td>
-                                        <a href="{{ project.id }}/clone/{{label.id}}" id='{{label.id}}'
-                                           data-toggle="tooltip" data-placement="top" title="Clone Label">
-                                        <span class="far fa-clone"></span>
-                                    </a>
-                                </td>
-                                <td>
-                                        <a href="{{ project.id }}/update/{{label.id}}" id='{{label.id}}'
-                                            data-toggle="tooltip" data-placement="top" title="Edit Label">
-                                        <span class="fas fa-pencil-alt"></span>
-                                    </a>
-                                </td>
-                                <td>
-                                    <a href="{{ project.id }}/delete/{{label.id}}" class="delete"
-                                       data-confirm="Do you really want to delete these label? This process cannot be undone."
-                                       data-toggle="tooltip" data-placement="top" title="Delete Label">
-                                        <span style="color: red;" class="fas fa-trash-alt"></span>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </table>
+                    <div class="tab-pane fade {% block labels_class %}{% endblock %}" id="labels">
+                        {% block labels_content %}{% endblock %}
                     </div>
-                    <div class="tab-pane fade" id="models">
-                        <div style="margin: 10px; margin-left: 0px;">
-                            <a type="button" class="btn btn-lg btn-success" href="{{ project.id }}/train/">Train Model</a>
-                            <div class="table-responsive" style="margin: 10px; margin-left: 0px;">
-                                <!-- Table -->
-                                <table class="table table-hover" id="model-table">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col"></th>
-                                            <th scope="col">Start</th>
-                                            <th scope="col">Finish</th>
-                                            <th scope="col">Accuracy</th>
-                                            <th scope="col">Precision</th>
-                                            <th scope="col">Recall</th>
-                                            <th scope="col">F1 Score</th>
-                                            <th scope="col">Confusion Matrix</th>
-                                            <th scope="col"></th>
-                                            <th scope="col"></th>
-                                            <th scope="col"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for pred in predictions %}
-                                        <!--<tr style="background-color:{% if pred.status == True %}#b1cbd8{% else %}#FFFFB2{% endif %};">-->
-                                        <tr>
-                                            {% if pred.status == 1 %}
-                                                <td><span class="badge badge-success">Success</span></td>
-                                                <td>{{ pred.created_at }}</td>
-                                                <td>{{ pred.updated_at }}</td>
-                                                <td>{{ pred.accuracy }}</td>
-                                                <td>{{ pred.precision }}</td>
-                                                <td>{{ pred.recall }}</td>
-                                                <td>{{ pred.f1_score }}</td>
-                                                <td>{{ pred.confusion_matrix|linebreaksbr }}</td>
-                                                <td><a href="{{ project.id }}/prediction/{{ pred.id }}"
-                                                       data-toggle="tooltip" data-placement="top" title="Make Prediction"><span class="fas fa-magic"></span></a></td>
-                                                <td><a href="{{ project.id }}/download/{{ pred.id }}" download
-                                                       data-toggle="tooltip" data-placement="top" title="Download Model"><span class="fas fa-download"></span></a></td>
-                                                <td>
-                                                    <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
-                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone."
-                                                       data-toggle="tooltip" data-placement="top" title="Delete Model">
-                                                        <span style="color: red;" class="fas fa-trash-alt"></span>
-                                                    </a>
-                                                </td>
-
-                                            {% else %}
-                                                {% if pred.status == 2%}
-                                                  <td><span class="badge badge-warning">Trainning</span></td>
-                                                {% elif pred.status == 3%}
-                                                    <td><span class="badge badge-danger">Error</span></td>
-                                                {% endif %}
-                                                <td>{{ pred.created_at }}</td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td>
-                                                    <a href="{{ project.id }}/deletepred/{{ pred.id }}" class="delete"
-                                                       data-confirm="Do you really want to delete these prediction? This process cannot be undone."
-                                                       data-toggle="tooltip" data-placement="top" title="Delete Model">
-                                                        <span style="color: red;" class="fas fa-trash-alt"></span>
-                                                    </a>
-                                                </td>
-                                            {% endif %}
-                                      </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="tab-pane fade {% block models_class %}{% endblock %}" id="models">
+                        {% block models_content %}{% endblock %}
                     </div>
-                    <div class="tab-pane fade" id="Features">
-                        <div style="margin: 10px; margin-left: 0px;">
-                            <table class="table table-hover">
-                                <thead>
-                                  <tr>
-                                    <th scope="col">COLUMN</th>
-                                    <th scope="col">FEATURES</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <form method="post">
-                                     {{ project_feature_formset.management_form }}
-                                     <b><font st color=red> {{ project_feature_formset.non_form_errors }}</font></b>
-                                     {% csrf_token %}
-                                     {% for form in project_feature_formset %}
-                                     {{ form.id }}
-                                     {{ form.column.as_hidden }}
-                                     <tr>
-                                       <td>{{ form.column.value }}</td>
-                                       <td>{{form.type}}</td>
-                                       <td></td>
-                                     </tr>
-                                     {% endfor %}
-                                     <tr>
-                                       <td></td>
-                                       <td>
-                                           <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
-                                       </td>
-                                     </tr>
-                                 </form>
-                               </tbody>
-                            </table>
-                       </div>
+                    <div class="tab-pane fade {% block  features_class %}{% endblock %}" id="Features">
+                        {% block features_content %}{% endblock %}
                     </div>
-
-                   <div class="tab-pane fade   " id="metadata">
-                       <div style="margin: 10px; margin-left: 0px;">
-                           <p>Metadata</p>
-                       </div>
+                   <div class="tab-pane fade {% block metadata_class %}{% endblock %}" id="metadata">
+                       {% block metadata_content %}{% endblock %}
                    </div>
                </div>
 
@@ -261,173 +68,178 @@
    </div>
     <!-- /.content -->
   </div>
+
+{% block javascript %}{% endblock javascript %}
 {% endblock %}
 
-{% block javascript %}
-<script type="text/javascript">
-     $(function () {
-        $('[data-toggle="tooltip"]').tooltip()
-    })
+<!--<script type="text/javascript">-->
+<!--     $(function () {-->
+<!--        $('[data-toggle="tooltip"]').tooltip()-->
+<!--    })-->
 
-    document.addEventListener('DOMContentLoaded', function () {
-        var categories = {{ categories|safe }};
-        var values = {{ values|safe }};
+<!--    // document.addEventListener('DOMContentLoaded', function () {-->
+<!--    //     var categories = {{ categories|safe }};-->
+<!--    //     var values = {{ values|safe }};-->
+<!--    //-->
+<!--    //     var input_size = {{ input_size|safe }}-->
+<!--    //     var input_columns = {{ input_columns|safe }}-->
+<!--    //-->
+<!--    //     categories = categories.map(cat=>new Date(cat));-->
+<!--    //-->
+<!--    //     var size = values[0].length;-->
+<!--    //-->
+<!--    //     var chart_type;-->
+<!--    //     {% if project.type == 1 %}-->
+<!--    //         chart_type = 'column';-->
+<!--    //     {% elif project.type == 2 %}-->
+<!--    //         chart_type = 'spline';-->
+<!--    //     {% endif %}-->
+<!--    //     console.log(chart_type);-->
+<!--    //-->
+<!--    //     const chart = Highcharts.chart('chartId', {-->
+<!--    //         chart: {-->
+<!--    //             type: chart_type,-->
+<!--    //             zoomType: 'x',-->
+<!--    //             panning: true,-->
+<!--    //             panKey: 'shift',-->
+<!--    //             resetZoomButton: {-->
+<!--    //                 position: {-->
+<!--    //                     align: 'right',-->
+<!--    //                     x: -150,-->
+<!--    //                     y: -45-->
+<!--    //                 }-->
+<!--    //             }-->
+<!--    //         },-->
+<!--    //         boost: {-->
+<!--    //             useGPUTranslations: true,-->
+<!--    //             usePreAllocated: true-->
+<!--    //         },-->
+<!--    //         title: {-->
+<!--    //             text: 'Values Measured'-->
+<!--    //         },-->
+<!--    //         xAxis: {-->
+<!--    //             type: 'datetime',-->
+<!--    //             labels: {-->
+<!--    //                 overflow: 'justify'-->
+<!--    //             },-->
+<!--    //             categories: categories,-->
+<!--    //             tickInterval: 5-->
+<!--    //           },-->
+<!--    //         yAxis: {-->
+<!--    //             title: {-->
+<!--    //                 text: 'Measured',-->
+<!--    //             },-->
+<!--    //             lineWidth: 1-->
+<!--    //         },-->
+<!--    //         tooltip: {-->
+<!--    //             valueSuffix: '',-->
+<!--    //             split: true-->
+<!--    //         },-->
+<!--    //         // series: values-->
+<!--    //         series: [{-->
+<!--    //             name: input_columns[0],-->
+<!--    //             data: values[0]-->
+<!--    //         }]-->
+<!--    //     });-->
+<!--    //     if(chart.series.length === 1 && input_size > 1){-->
+<!--    //         for(var i = 1; i < input_size; i++){-->
+<!--    //             chart.addSeries({-->
+<!--    //                 name: input_columns[i],-->
+<!--    //                 data: values[i],-->
+<!--    //                 visible: false-->
+<!--    //             });-->
+<!--    //         }-->
+<!--    //     }-->
+<!--    // });-->
 
-        var input_size = {{ input_size|safe }}
-        var input_columns = {{ input_columns|safe }}
+<!--    //-->
+<!--    // $('#projectTab a').click(function(e) {-->
+<!--    //   e.preventDefault();-->
+<!--    //   $(this).tab('show');-->
+<!--    // });-->
+<!--    //-->
+<!--    // // store the currently selected tab in the hash value-->
+<!--    // $("ul.nav-tabs > li > a").on("shown.bs.tab", function(e) {-->
+<!--    //   var id = $(e.target).attr("href").substr(1);-->
+<!--    //   window.location.hash = id;-->
+<!--    // });-->
+<!--    //-->
+<!--    // // on load of the page: switch to the currently selected tab-->
+<!--    // var hash = window.location.hash;-->
+<!--    // $('#projectTab a[href="' + hash + '"]').tab('show');-->
+<!--    //-->
 
-        categories = categories.map(cat=>new Date(cat));
+<!--    var deleteLinks = document.querySelectorAll('.delete');-->
 
-        var size = values[0].length;
+<!--    for (var i = 0; i < deleteLinks.length; i++) {-->
+<!--      deleteLinks[i].addEventListener('click', function(event) {-->
+<!--          event.preventDefault();-->
 
+<!--          var choice = confirm(this.getAttribute('data-confirm'));-->
 
+<!--          if (choice) {-->
+<!--            window.location.href = this.getAttribute('href');-->
+<!--          }-->
+<!--      });-->
+<!--    }-->
 
-        var chart_type;
-        {% if project.type == 1 %}
-            chart_type = 'column';
-        {% elif project.type == 2 %}
-            chart_type = 'spline';
-        {% endif %}
-        console.log(chart_type);
+<!--     $(document).ready(function(){-->
+<!--        $('#messageModal').modal({show:true});-->
+<!--    });-->
 
-        const chart = Highcharts.chart('chartId', {
-            chart: {
-                type: chart_type,
-                zoomType: 'x',
-                scrollablePlotArea: {
-                    minWidth: size,
-                    scrollPositionX: 1
-                }
-            },
-            boost: {
-                useGPUTranslations: true,
-                usePreAllocated: true
-            },
-            title: {
-                text: 'Values Measured'
-            },
-            xAxis: {
-                type: 'datetime',
-                labels: {
-                    overflow: 'justify'
-                },
-                categories: categories,
-                tickInterval: 5
-              },
-            yAxis: {
-                title: {
-                    text: 'Measured',
-                },
-                lineWidth: 1
-            },
-            tooltip: {
-                valueSuffix: '',
-                split: true
-            },
-            // series: values
-            series: [{
-                name: input_columns[0],
-                data: values[0]
-            }]
-        });
-        if(chart.series.length === 1 && input_size > 1){
-            for(var i = 1; i < input_size; i++){
-                chart.addSeries({
-                    name: input_columns[i],
-                    data: values[i],
-                    visible: false
-                });
-            }
-        }
-    });
+<!--     $(document).ready( function () {-->
+<!--        $('#model-table').DataTable({-->
+<!--             searching: false,-->
+<!--             paging: false,-->
+<!--             "lengthChange": false,-->
+<!--             columns: [-->
+<!--                null,-->
+<!--                null,-->
+<!--                null,-->
+<!--                null,-->
+<!--                null,-->
+<!--                null,-->
+<!--                null,-->
+<!--                { orderable: false },-->
+<!--              ]-->
+<!--        });-->
+<!--     } );-->
 
+<!--    // var element = document.getElementById("collapseTwo");-->
+<!--    // var data = JSON.parse("{{loaded_data|escapejs}}");-->
+<!--    // var container = document.getElementById('data-table');-->
+<!--    // var hot = new Handsontable(container, {-->
+<!--    //     data: data,-->
+<!--    //     colHeaders: JSON.parse("{{columns|escapejs}}"),-->
+<!--    //     rowHeaders: true,-->
+<!--    //     height: 500,-->
+<!--    //     width: getComputedStyle(element).width,-->
+<!--    //     filters: true,-->
+<!--    //     dropdownMenu: true,-->
+<!--    //     viewportRowRenderingOffset: 50,-->
+<!--    //     stretchH: 'all',-->
+<!--    //     licenseKey: 'non-commercial-and-evaluation',-->
+<!--    // });-->
+<!--    // Handsontable.dom.addEvent(window, 'hashchange', function (event) {-->
+<!--    //     hot.loadData(getData());-->
+<!--    // });-->
+<!--    //-->
+<!--    // var button1 = document.getElementById('export-file');-->
+<!--    // var exportPlugin1 = hot.getPlugin('exportFile');-->
+<!--    //-->
+<!--    // button1.addEventListener('click', function() {-->
+<!--    //     exportPlugin1.downloadFile('csv', {-->
+<!--    //         bom: false,-->
+<!--    //         columnDelimiter: ',',-->
+<!--    //         columnHeaders: true,-->
+<!--    //         exportHiddenColumns: true,-->
+<!--    //         exportHiddenRows: true,-->
+<!--    //         fileExtension: 'csv',-->
+<!--    //         filename: '{{ project.name|safe }}',-->
+<!--    //         mimeType: 'text/csv',-->
+<!--    //         rowDelimiter: '\r\n',-->
+<!--    //         rowHeaders: true-->
+<!--    //     });-->
+<!--    // });-->
 
-    $('#projectTab a').click(function(e) {
-      e.preventDefault();
-      $(this).tab('show');
-    });
-
-    // store the currently selected tab in the hash value
-    $("ul.nav-tabs > li > a").on("shown.bs.tab", function(e) {
-      var id = $(e.target).attr("href").substr(1);
-      window.location.hash = id;
-    });
-
-    // on load of the page: switch to the currently selected tab
-    var hash = window.location.hash;
-    $('#projectTab a[href="' + hash + '"]').tab('show');
-
-
-    var deleteLinks = document.querySelectorAll('.delete');
-
-    for (var i = 0; i < deleteLinks.length; i++) {
-      deleteLinks[i].addEventListener('click', function(event) {
-          event.preventDefault();
-
-          var choice = confirm(this.getAttribute('data-confirm'));
-
-          if (choice) {
-            window.location.href = this.getAttribute('href');
-          }
-      });
-    }
-
-     $(document).ready(function(){
-        $('#messageModal').modal({show:true});
-    });
-
-     $(document).ready( function () {
-        $('#model-table').DataTable({
-             searching: false,
-             paging: false,
-             "lengthChange": false,
-             columns: [
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                { orderable: false },
-              ]
-        });
-     } );
-
-    var data = JSON.parse("{{loaded_data|escapejs}}");
-    var container = document.getElementById('data-table');
-    var hot = new Handsontable(container, {
-        data: data,
-        colHeaders: JSON.parse("{{columns|escapejs}}"),
-        rowHeaders: true,
-        height: 620,
-        filters: true,
-        dropdownMenu: true,
-        viewportRowRenderingOffset: 50,
-        stretchH: 'all',
-        licenseKey: 'non-commercial-and-evaluation',
-    });
-    Handsontable.dom.addEvent(window, 'hashchange', function (event) {
-        hot.loadData(getData());
-    });
-
-    var button1 = document.getElementById('export-file');
-    var exportPlugin1 = hot.getPlugin('exportFile');
-
-    button1.addEventListener('click', function() {
-        exportPlugin1.downloadFile('csv', {
-            bom: false,
-            columnDelimiter: ',',
-            columnHeaders: true,
-            exportHiddenColumns: true,
-            exportHiddenRows: true,
-            fileExtension: 'csv',
-            filename: '{{ project.name|safe }}',
-            mimeType: 'text/csv',
-            rowDelimiter: '\r\n',
-            rowHeaders: true
-        });
-    });
-
-</script>
-{% endblock javascript %}
+<!--</script>-->

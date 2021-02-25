@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import pickle
 import random
@@ -87,6 +88,11 @@ def train_precipitation_prediction(project_id, pred_id):
             pickle.dump(clf, f)
 
         disp = metrics.confusion_matrix(y_test, y_pred, normalize='true')
+        disp = disp.round(decimals=4)
+        input_column = json.dumps(input_column_names)
+        target_column = json.dumps(target_column_name)
+        timestamp_column = json.dumps(timestamp_column_name)
+        skip_column = json.dumps(skip_column_names)
 
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
                                                             confusion_matrix=disp,
@@ -94,7 +100,12 @@ def train_precipitation_prediction(project_id, pred_id):
                                                             precision=precision,
                                                             recall=recall,
                                                             f1_score=f1,
-                                                            serialized_prediction_file=filename_model)
+                                                            serialized_prediction_file=filename_model,
+                                                            input_features=input_column.translate({ord('['): None, ord(']'): None, ord(','): '\n'}),
+                                                            timestamp_features=timestamp_column,
+                                                            skip_features=skip_column.translate({ord('['): None, ord(']'): None, ord(','): '\n'}),
+                                                            target_features=target_column
+                                                            )
     except Exception as e:
         print(f'train_precipitation_prediction Error: {e}')
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)

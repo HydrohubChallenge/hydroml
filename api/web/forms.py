@@ -108,6 +108,8 @@ class ProjectFeatureInlineFormset(forms.BaseInlineFormSet):
         timestamp_columns_count = 0
         input_columns_count = 0
 
+        errors = []
+
         for form in self.forms:
             current_type = form.cleaned_data['type']
 
@@ -121,20 +123,26 @@ class ProjectFeatureInlineFormset(forms.BaseInlineFormSet):
                 input_columns_count += 1
 
         if target_columns_count > 1:
-            raise forms.ValidationError('You can have only one target column.')
+            errors.append(forms.ValidationError('You can have only one target column.'))
 
         if timestamp_columns_count > 1:
-            raise forms.ValidationError('You can have only one timestamp column.')
+            # raise forms.ValidationError('You can have only one timestamp column.')
+            errors.append(forms.ValidationError('You can have only one timestamp column.'))
 
         if target_columns_count == 0:
-            raise forms.ValidationError('You have to select one target column.')
+            # raise forms.ValidationError('You have to select one target column.')
+            errors.append(forms.ValidationError('You have to select one target column.'))
 
         if timestamp_columns_count == 0:
-            raise forms.ValidationError('You have to select one timestamp column.')
+            # raise forms.ValidationError('You have to select one timestamp column.')
+            errors.append(forms.ValidationError('You have to select one timestamp column.'))
 
         if input_columns_count == 0:
-            raise forms.ValidationError('You have to select at least one input column.')
+            # raise forms.ValidationError('You have to select at least one input column.')
+            errors.append(forms.ValidationError('You have to select at least one input column.'))
 
+        if len(errors)>0:
+            raise forms.ValidationError(errors)
 
 class ProjectPredictionUploadFile(forms.Form):
     def __init__(self, *args, **kwargs):
