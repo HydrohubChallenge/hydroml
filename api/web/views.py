@@ -518,11 +518,6 @@ def models_tab(request, project_id):
             project_feature_formset = project_feature_formset_factory(
                 instance=project_sel)
 
-        for pred in predictions:
-            print(pred.confusion_matrix)
-            m1 = pred.confusion_matrix.translate({ord('['): None, ord(']'): None, ord(' '): ','})
-            print(m1)
-
         content = {
             'project': project_sel,
             'project_feature_formset': project_feature_formset,
