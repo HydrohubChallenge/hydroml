@@ -1,0 +1,70 @@
+{% extends 'web/project_view.html' %}
+
+{% load i18n %}
+
+{% block labels_link %}active disabled{% endblock %}
+
+{% block labels_class %}show active{% endblock %}
+
+{% block labels_content %}
+<a class="btn btn-outline-primary" href="{% url 'create-label' project_id=project.id %}"
+   style="margin: 10px;">
+    <i class="fas fa-fw fa-plus"></i>
+    <span>New Label</span>
+</a>
+
+<!-- Table -->
+<table class="table table-hover">
+    {% for label in labels %}
+    <tr>
+        <td>{{ label.name }}</td>
+        <td>{{ label.description }}</td>
+        <td style="text-align: center;">
+            <div class="rounded-circle" style="width: 2rem; height: 2rem; background-color:{{ label.color }};"></div>
+        </td>
+        <td>
+                <a href="{% url 'clone-label' project_id=project.id label_id=label.id %}" id='{{label.id}}'
+                   data-toggle="tooltip" data-placement="top" title="Clone Label">
+                <span class="far fa-clone"></span>
+            </a>
+        </td>
+        <td>
+                <a href="{% url 'update-label' project_id=project.id label_id=label.id %}" id='{{label.id}}'
+                    data-toggle="tooltip" data-placement="top" title="Edit Label">
+                <span class="fas fa-pencil-alt"></span>
+            </a>
+        </td>
+        <td>
+            <a href="{% url 'delete-label' project_id=project.id label_id=label.id %}" class="delete"
+               data-confirm="Do you really want to delete these label? This process cannot be undone."
+               data-toggle="tooltip" data-placement="top" title="Delete Label">
+                <span style="color: red;" class="fas fa-trash-alt"></span>
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+     $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+
+    var deleteLinks = document.querySelectorAll('.delete');
+
+    for (var i = 0; i < deleteLinks.length; i++) {
+      deleteLinks[i].addEventListener('click', function(event) {
+          event.preventDefault();
+
+          var choice = confirm(this.getAttribute('data-confirm'));
+
+          if (choice) {
+            window.location.href = this.getAttribute('href');
+          }
+      });
+    }
+</script>
+{% endblock javascript%}

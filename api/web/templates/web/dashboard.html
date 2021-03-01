@@ -38,7 +38,7 @@
                         <div class="card-body shadow">
                             <div class="row mb-2">
                                 <div class="col-sm-2" style="float: none; vertical-align:middle; display:inline-block; padding: 0;">
-                                    <a class="btn rounded-circle bg-gradient-lightblue shadow" style="width: 31px; height: 31px; padding: 0" href="project/{{project.id}}">
+                                    <a class="btn rounded-circle bg-gradient-lightblue shadow" style="width: 31px; height: 31px; padding: 0" href="{% url 'data-tab' project_id=project.id %}">
                                         {% if project.type == 1 %}
                                             <i class="fas fa-cloud-rain" style="width: 18px; height: 18px; margin-top: 5px;"></i>
                                         {% elif project.type == 2 %}
@@ -50,7 +50,7 @@
                                     <h5 class="card-title" style="display: flex; padding: 0;">
                                         <a class="text-secondary"
                                            style="max-width: 175px; font-size: 150%; flex-shrink: 1; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                                           href="project/{{project.id}}"
+                                           href="{% url 'data-tab' project_id=project.id %}"
                                            data-toggle="tooltip" data-placement="top" title="{{ project.name }}">
                                             {{ project.name }}
                                         </a>

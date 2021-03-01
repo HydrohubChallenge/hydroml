@@ -1,0 +1,81 @@
+{% extends 'web/index.html' %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                        <h1 class="m-0">Make Prediction</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
+                        <li class="breadcrumb-item active">Make Prediction</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <div class="content">
+            <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem; padding-top: 50px;margin: 30px;margin-left: 0px;">
+                {% if number_rows == 0 %}
+                    <div style="margin: 0 auto; width: 80%;">
+
+                        <form enctype="multipart/form-data" method='POST'>
+                            {% csrf_token %}
+                            {{ form.errors }}
+                            <table class="w-50 table table-light">
+                                {% for field in form %}
+                                <tr>
+                                    <th>{{field.label}}</th>
+                                    <td>{{ field }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <button class="btn btn-lg btn-success" type="submit">{% translate " Upload" %}</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </form>
+                    </div>
+
+                {% else %}
+                    <div style="margin: 0 auto; width: 80%;">
+                        <h3>Results</h3>
+                        <table class="table table-hover">
+                            <tbody>
+                                 <tr>
+                                   <td>Number of Rows</td>
+                                   <td>{{number_rows}}</td>
+                                 </tr>
+                                 <tr>
+                                   <td>Number of Success</td>
+                                   <td>{{number_success}}</td>
+                                 </tr>
+                                <tr>
+                                   <td>
+                                       <a href="{% url 'download-prediction' %}" download>
+                                           Download Prediction File
+                                       </a>
+                                   </td>
+                                    <td></td>
+                                 </tr>
+                           </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+    </div>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}

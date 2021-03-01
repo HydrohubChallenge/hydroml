@@ -1,0 +1,176 @@
+{% extends 'web/project_view.html' %}
+
+{% load i18n %}
+
+{% block data_link %}active disabled{% endblock %}
+
+{% block data_class %}show active{% endblock %}
+
+{% block data_content %}
+<div id="accordion" style="margin-top: 10px;">
+  <div class="card">
+    <div class="card-header bg-gradient-light" id="headingOne">
+      <h3 class="mb-0">
+        <button class="btn btn-link collapsed text-dark" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+          Chart
+        </button>
+      </h3>
+    </div>
+    <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+      <div class="card-body" id="chartId" style="width:100%; height:400px; text-transform: capitalize;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-gradient-light" id="headingTwo">
+      <h3 class="mb-0">
+        <button class="btn btn-link collapsed text-dark" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          Table
+        </button>
+      </h3>
+    </div>
+    <div id="collapseTwo" class="collapse clearfix" aria-labelledby="headingTwo" data-parent="#accordion">
+      <button id="export-file" class="intext-btn btn btn-outline-primary float-xl-right" style="margin: 10px; margin-left: 0px;"><span class="fas fa-download" style="margin-right: 10px;"></span>Download CSV</button>
+        <div class="card-body" id="data-table" style="margin-top:60px; padding: 0; width: 100%;"></div>
+        <div class="d-flex justify-content-center">
+          <div id="data-table-loading" style="position: absolute; margin-top: 10px;" class="spinner-border text-primary" role="status">
+              <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block javascript %}
+<!-- Handsontable -->
+<script src="https://cdn.jsdelivr.net/npm/handsontable@8.2.0/dist/handsontable.full.min.js"></script>
+<!-- Highcharts -->
+<script src="https://code.highcharts.com/9.0.0/highcharts.js"></script>
+<script src="https://code.highcharts.com/9.0.0/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/9.0.0/modules/export-data.js"></script>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        var categories = {{ categories|safe }}
+        var values = {{ values|safe }}
+
+        var input_size = {{ input_size|safe }}
+        var input_columns = {{ input_columns|safe }}
+
+        categories = categories.map(cat=>new Date(cat));
+
+        var chart_type;
+        {% if project.type == 1 %}
+            chart_type = 'column';
+        {% elif project.type == 2 %}
+            chart_type = 'spline';
+        {% endif %}
+        console.log(chart_type);
+
+        const chart = Highcharts.chart('chartId', {
+            chart: {
+                type: chart_type,
+                zoomType: 'x',
+                panning: true,
+                panKey: 'shift',
+                resetZoomButton: {
+                    position: {
+                        align: 'right',
+                        x: -150,
+                        y: -45
+                    }
+                }
+            },
+            boost: {
+                useGPUTranslations: true,
+                usePreAllocated: true
+            },
+            title: {
+                text: 'Values Measured'
+            },
+            xAxis: {
+                type: 'datetime',
+                labels: {
+                    overflow: 'justify'
+                },
+                categories: categories,
+                tickInterval: 5
+              },
+            yAxis: {
+                title: {
+                    text: 'Measured',
+                },
+                lineWidth: 1
+            },
+            tooltip: {
+                valueSuffix: '',
+                split: true
+            },
+            // series: values
+            series: [{
+                name: input_columns[0],
+                data: values[0]
+            }]
+        });
+        if(chart.series.length === 1 && input_size > 1){
+            for(var i = 1; i < input_size; i++){
+                chart.addSeries({
+                    name: input_columns[i],
+                    data: values[i],
+                    visible: false
+                });
+            }
+        }
+    });
+
+    $("#collapseTwo").on("show.bs.collapse", function(){
+        $("#data-table-loading").show();
+        $("#data-table").hide();
+    });
+    $("#collapseTwo").on("shown.bs.collapse", function(){
+        $("#data-table-loading").hide();
+        $("#data-table").show();
+        hot.render();
+    });
+
+    var element = document.getElementById("collapseTwo");
+    var data = JSON.parse("{{loaded_data|escapejs}}");
+    var container = document.getElementById('data-table');
+    var hot = new Handsontable(container, {
+        data: data,
+        colHeaders: JSON.parse("{{columns_js|escapejs}}"),
+        rowHeaders: true,
+        height: 500,
+        width: getComputedStyle(element).width,
+        filters: true,
+        dropdownMenu: true,
+        viewportRowRenderingOffset: 50,
+        stretchH: 'all',
+        licenseKey: 'non-commercial-and-evaluation',
+    });
+    Handsontable.dom.addEvent(window, 'hashchange', function (event) {
+        hot.loadData(getData());
+    });
+
+    var button1 = document.getElementById('export-file');
+    var exportPlugin1 = hot.getPlugin('exportFile');
+
+    button1.addEventListener('click', function() {
+        exportPlugin1.downloadFile('csv', {
+            bom: false,
+            columnDelimiter: ',',
+            columnHeaders: true,
+            exportHiddenColumns: true,
+            exportHiddenRows: true,
+            fileExtension: 'csv',
+            filename: '{{ project.name|safe }}',
+            mimeType: 'text/csv',
+            rowDelimiter: '\r\n',
+            rowHeaders: true
+        });
+    });
+
+</script>
+{% endblock javascript %}

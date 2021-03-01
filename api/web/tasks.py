@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import pickle
 import random
@@ -21,7 +22,6 @@ from sklearn.preprocessing import label_binarize
 from .models import Project, ProjectPrediction
 from .models import ProjectFeature
 
-
 @shared_task
 def train_precipitation_prediction(project_id, pred_id):
     try:
@@ -31,7 +31,7 @@ def train_precipitation_prediction(project_id, pred_id):
         csv_delimiter = project.delimiter
         csv_file = os.path.join(settings.MEDIA_ROOT, project.dataset_file.name)
         file = open(csv_file, 'r')
-        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])
+        data_train = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])
         path = "models/precipitation/"
         model_base_path = os.path.join(settings.MEDIA_ROOT, path, str(project_id))
 
@@ -41,28 +41,16 @@ def train_precipitation_prediction(project_id, pred_id):
             df_slice = df[df.datetime.dt.date < day]
             X_train = df_slice[x_columns]
             y_train = df_slice[y_column]
-
             df_slice = df[df.datetime.dt.date >= day]
             X_test = df_slice[x_columns]
             y_test = df_slice[y_column]
-
             return X_train, X_test, y_train, y_test
-
-        def create_data_classification(df, columns, target, threshold):
-            columns = columns[columns != target]
-
-            df['avg'] = df[columns].mean(axis=1)
-
-            df.loc[df[target] > df['avg'] * (1 + threshold), 'label'] = 0
-            df.loc[df[target] <= df['avg'] * (1 + threshold), 'label'] = 1
-
-            df = df.astype({'label': np.int})
-
-            return df
 
         input_column_names = []
         skip_column_names = []
         target_column_name = None
+        timestamp_column_name = None
+
         for project_feature in project_features:
             if project_feature.type == ProjectFeature.Type.INPUT:
                 input_column_names.append(project_feature.column)
@@ -70,18 +58,20 @@ def train_precipitation_prediction(project_id, pred_id):
                 skip_column_names.append(project_feature.column)
             elif project_feature.type == ProjectFeature.Type.TARGET:
                 target_column_name = project_feature.column
+            elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
+                timestamp_column_name = project_feature.column
 
-        data.drop(skip_column_names, axis=1, inplace=True)
+        if len(skip_column_names) > 0:
+            data_train.drop(skip_column_names, axis=1, inplace=True)
 
-        data = create_data_classification(data, np.array(input_column_names), target_column_name, 0.3)
-
-        X_train, X_test, y_train, y_test = split_df(data,
-                                                    input_column_names + [target_column_name],
-                                                    'label',
+        X_train, X_test, y_train, y_test = split_df(data_train,
+                                                    input_column_names,
+                                                    target_column_name,
                                                     datetime.datetime(2020, 11, 1).date())
 
         clf = RandomForestClassifier(max_depth=7, n_estimators=250)
-        clf.fit(X_train, y_train.values.ravel())
+
+        clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_test)
 
@@ -97,23 +87,29 @@ def train_precipitation_prediction(project_id, pred_id):
         with open(filename_model, "wb") as f:
             pickle.dump(clf, f)
 
-        class_names = [0, 1]
-
-        disp = metrics.plot_confusion_matrix(clf, X_test, y_test,
-                                             display_labels=class_names,
-                                             cmap=plt.cm.Blues,
-                                             normalize='true')
+        disp = metrics.confusion_matrix(y_test, y_pred, normalize='true')
+        disp = disp.round(decimals=4)
+        input_column = json.dumps(input_column_names)
+        target_column = json.dumps(target_column_name)
+        timestamp_column = json.dumps(timestamp_column_name)
+        skip_column = json.dumps(skip_column_names)
 
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
-                                                            confusion_matrix=disp.confusion_matrix,
+                                                            confusion_matrix=disp,
                                                             accuracy=accu,
                                                             precision=precision,
                                                             recall=recall,
                                                             f1_score=f1,
-                                                            serialized_prediction_file=filename_model)
+                                                            serialized_prediction_file=filename_model,
+                                                            input_features=input_column.translate({ord('['): None, ord(']'): None, ord(','): '\n'}),
+                                                            timestamp_features=timestamp_column,
+                                                            skip_features=skip_column.translate({ord('['): None, ord(']'): None, ord(','): '\n'}),
+                                                            target_features=target_column
+                                                            )
     except Exception as e:
         print(f'train_precipitation_prediction Error: {e}')
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)
+
 
 
 @shared_task
