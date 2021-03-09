@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.contrib.postgres.fields import ArrayField
 
 
 def user_directory_path(instance, filename):
@@ -30,6 +31,10 @@ class Project(BaseModel):
     class Type(models.IntegerChoices):
         RAINFALL = 1, _('Rainfall')
         WATER_LEVEL = 2, _('Water Level')
+
+    class Status(models.IntegerChoices):
+        COMPLETE = 1, _('Complete')
+        INCOMPLETE = 0, _('Incomplete')
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -61,6 +66,12 @@ class Project(BaseModel):
     delimiter = models.CharField(
         max_length=3,
         default=',',
+    )
+
+    status = models.IntegerField(
+        choices=Status.choices,
+        null=True,
+        blank=False,
     )
 
     def __str__(self):
@@ -132,6 +143,15 @@ class ProjectPrediction(BaseModel):
     )
 
     confusion_matrix = models.TextField(
+        blank=True,
+    )
+
+    confusion_matrix_array = ArrayField(
+        models.DecimalField(
+            max_digits=18,
+            decimal_places=17,
+        ),
+        null=True,
         blank=True,
     )
 

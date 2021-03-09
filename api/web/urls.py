@@ -19,7 +19,7 @@ from . import views
 urlpatterns = [
     path('', views.index, name = 'index'),
     path('create/', views.create, name='create-project'),
-    path('update/<int:project_id>', views.update_project),
+    path('update/<int:project_id>', views.update_project, name='update-project'),
     path('clone/<int:project_id>', views.clone_project),
     path('delete/<int:project_id>', views.delete_project, name='delete-project'),
     path('project/<int:project_id>/data/', views.data_tab, name='data-tab'),
@@ -34,7 +34,7 @@ urlpatterns = [
     path('project/<int:project_id>/delete/<int:label_id>', views.delete_label, name='delete-label'),
     path('project/<int:project_id>/deletepred/<int:prediction_id>', views.delete_model, name='delete-model'),
     path('download/<int:prediction_id>', views.download_model, name='download-model'),
-    path('download_prediction/', views.download_prediction, name='download-prediction'),
+    path('download_prediction/<int:prediction_id>', views.download_prediction, name='download-prediction'),
     path('project/<int:project_id>/prediction/<int:prediction_id>', views.make_prediction, name='make-prediction'),
     path('create_feature/<int:project_id>', views.create_feature, name='create-feature'),
 ]

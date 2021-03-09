@@ -124,26 +124,21 @@
                         <td class="text-center">{{ pred.recall|stringformat:".4f" }}</td>
                         <td class="text-center">{{ pred.f1_score|stringformat:".4f" }}</td>
                         <td class="text-center">
-                            {% with cm=pred.confusion_matrix|cut:"["|cut:"]" %}
                             <table class="table table-bordered mb-0">
-                                <tr>
-                                    <td class="text-center">
-                                        {{cm|slice:":7"}}
+                            {% for item in pred.confusion_matrix_array %}
+                                {% if forloop.counter0 in start  %}
+                                    <tr>
+                                {% endif %}
+
+                                    <td class="text-center" style="background: rgba(8, 48, 107, {{ item|stringformat:".2f" }});{% if item > 0.6 %} color:white; {% endif %}">
+                                        {{item|stringformat:".4f"}}
                                     </td>
-                                    <td class="text-center">
-                                        {{cm|slice:"7:15"}}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center">
-                                        {{cm|slice:"15:21"}}
-                                    </td>
-                                    <td class="text-center">
-                                        {{cm|slice:"22:28"}}
-                                    </td>
-                                </tr>
+
+                                {% if forloop.counter0 in end  %}
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
                             </table>
-                            {% endwith %}
                         </td>
                         <td class="text-center">
                             {{ pred.input_features|linebreaksbr }}

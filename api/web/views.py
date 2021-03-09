@@ -1,29 +1,37 @@
 import json
-import json as simplejson
-import os, tempfile
+import math
+import os
 import pickle
-
-import numpy as np
-
+import tempfile
 import pandas as pd
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
-from django.http import FileResponse, HttpResponseRedirect, HttpResponse
+from django.http import FileResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.utils.translation import get_language
+from keras.models import load_model
 
 from .forms import ProjectCreate, ProjectLabelCreate, ProjectFeatureInlineFormset, ProjectPredictionUploadFile
 from .models import Project, ProjectLabel, ProjectPrediction, ProjectFeature
 from .tasks import train_precipitation_prediction, train_water_level_prediction
 
-from keras.models import load_model
-
 
 @login_required
 def index(request):
-    projects = Project.objects.filter(owner=request.user).order_by('created_at')
+    incomplete = Project.objects.filter(owner=request.user, status=Project.Status.INCOMPLETE).order_by('created_at')
+
+    for p in incomplete:
+        project_id = int(p.id)
+        ProjectLabel.objects.filter(project_id=project_id).delete()
+        ProjectFeature.objects.filter(project_id=project_id).delete()
+        ProjectPrediction.objects.filter(project_id=project_id).delete()
+        p.delete()
+
+    projects = Project.objects.filter(owner=request.user, status=Project.Status.COMPLETE).order_by('created_at')
+
     current_language = get_language()
     content = {"projects": projects, "current_language": current_language}
     return render(request, "web/dashboard.html", content)
@@ -33,10 +41,12 @@ def index(request):
 def create(request):
     create_project_form = ProjectCreate()
     if request.method == "POST":
-        create_project_form = ProjectCreate(request.POST, request.FILES)
+        create_project_form = ProjectCreate(request.POST or None, request.FILES or None)
         if create_project_form.is_valid():
+
             obj = create_project_form.save(commit=False)
             obj.owner = request.user
+            obj.status = Project.Status.INCOMPLETE
             obj.save()
 
             csv_delimiter = obj.delimiter
@@ -60,9 +70,9 @@ def create(request):
             return redirect("create-feature", project_id=obj.id)
         else:
             content = {"create_form": create_project_form}
-            return render(request, "web/create_form.html", content)
+            return render(request, "web/create_project.html", content)
     else:
-        return render(request, "web/create_form.html", {"create_form": create_project_form, "method": 'create'})
+        return render(request, "web/create_project.html", {"create_form": create_project_form, "method": 'create'})
 
 
 @login_required
@@ -78,13 +88,33 @@ def update_project(request, project_id):
         project_form = ProjectCreate(request.POST, request.FILES, instance=project_sel)
 
         if project_form.is_valid():
-            project_form.save()
-            return redirect("index")
+
+            obj = project_form.save()
+
+            csv_delimiter = obj.delimiter
+            csv_file = os.path.join(settings.MEDIA_ROOT, obj.dataset_file.name)
+            file = open(csv_file, 'r')
+            df = pd.read_csv(file, delimiter=csv_delimiter)
+
+            if 'label' not in df.columns:
+                df["label"] = " "
+                df.to_csv(csv_file, sep=csv_delimiter, index=False)
+
+            columns_csv = df.columns.values.tolist()
+
+            ProjectFeature.objects.filter(project_id=project_id).delete()
+            for column in columns_csv:
+                project_feature = ProjectFeature.objects.create(
+                    column=column,
+                    project=obj,
+                )
+                project_feature.save()
+            return redirect("create-feature", project_id=obj.id)
 
     else:
         project_form = ProjectCreate(instance=project_sel)
 
-    return render(request, "web/create_form.html", {"create_form": project_form, "method": 'update'})
+    return render(request, "web/create_project.html", {"create_form": project_form, "method": 'update'})
 
 
 @login_required
@@ -249,7 +279,7 @@ def create_feature(request, project_id):
     try:
         project = Project.objects.get(id=int(project_id))
     except Project.DoesNotExist:
-        return redirect("index")
+        return redirect("create-project")
 
     project_feature_formset_factory = inlineformset_factory(Project, ProjectFeature, fields=(
         'type', 'column'), extra=0, formset=ProjectFeatureInlineFormset)
@@ -259,12 +289,15 @@ def create_feature(request, project_id):
             request.POST, instance=project)
         if project_feature_formset.is_valid():
             project_feature_formset.save()
+            project.status = Project.Status.COMPLETE
+            project.save()
             return redirect("index")
     else:
         project_feature_formset = project_feature_formset_factory(
             instance=project)
 
     content = {
+        'project_id': project_id,
         'project_feature_formset': project_feature_formset
     }
 
@@ -272,8 +305,8 @@ def create_feature(request, project_id):
 
 
 @login_required
-def download_prediction(request):
-    file_name = 'prediction.csv'
+def download_prediction(request, prediction_id):
+    file_name = 'prediction_{0}.csv'.format(prediction_id)
     file_path = os.path.join(tempfile.gettempdir(), file_name)
     if os.path.isfile(file_path):
         response = FileResponse(open(file_path, 'rb'))
@@ -284,7 +317,7 @@ def download_prediction(request):
 
 @login_required
 def make_prediction(request, project_id, prediction_id):
-    file_name = 'prediction.csv'
+    file_name = 'prediction_{0}.csv'.format(prediction_id)
     file_path = os.path.join(tempfile.gettempdir(), file_name)
     number_rows = 0
     number_success = 0
@@ -309,6 +342,7 @@ def make_prediction(request, project_id, prediction_id):
         'prediction': prediction,
         'number_rows': number_rows,
         'number_success': number_success,
+        'prediction_id': prediction_id,
     }
 
     return render(request, "web/make_prediction.html", content)
@@ -356,16 +390,7 @@ def handle_uploaded_file(file, project_id, prediction_id):
 
     elif project_sel.type == Project.Type.WATER_LEVEL:
         loaded_model = load_model(model_file)
-
-        for column in X_test.columns:
-            if X_test[column].dtype == np.float64:
-                X_test[column] = np.asarray(X_test[column]).astype(np.float32)
-            elif X_test[column].dtype == np.object:
-                X_test[column] = X_test[column].astype('|S')
-
-        loaded_model.predict(X_test)
-        prediction = pd.Series(prediction, name='prediction')
-        export_df = pd.concat([df, prediction], axis=1)
+        # to be implemented
 
     return export_df, number_rows, number_success
 
@@ -407,7 +432,7 @@ def data_tab(request, project_id):
                 values = list(df[c])
                 values_list.append(values)
 
-            json_list = simplejson.dumps(values_list)
+            json_list = json.dumps(values_list)
 
             content = {
                 'loaded_data': data_js,
@@ -518,11 +543,24 @@ def models_tab(request, project_id):
             project_feature_formset = project_feature_formset_factory(
                 instance=project_sel)
 
-        content = {
-            'project': project_sel,
-            'project_feature_formset': project_feature_formset,
-            'predictions': predictions,
-        }
+        if len(predictions) > 0 and predictions[0].status == ProjectPrediction.StatusType.SUCCESS:
+            size = len(predictions[0].confusion_matrix_array)
+            root = int(math.sqrt(size))
+            start = range(0, size, root)
+            end = range(root - 1, size, root)
+            content = {
+                'project': project_sel,
+                'project_feature_formset': project_feature_formset,
+                'predictions': predictions,
+                'start': start,
+                'end': end,
+            }
+        else:
+            content = {
+                'project': project_sel,
+                'project_feature_formset': project_feature_formset,
+                'predictions': predictions,
+            }
 
     except Project.DoesNotExist:
         return redirect("index")
