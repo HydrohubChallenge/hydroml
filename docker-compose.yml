@@ -11,7 +11,7 @@ services:
     environment:
       - GRANT_SUDO=yes
     ports:
-      - "8888:8888"
+      - "8880:8888"
       - "8051:8050"
     logging:
       driver: "json-file"
@@ -29,8 +29,8 @@ services:
       - ./api:/api
       - ./data:/data
     ports:
-      - "8080:8000"
-      - "9999:9999"
+      - "8070:8000"
+      - "9990:9999"
     depends_on:
       - db
     logging:
@@ -47,7 +47,7 @@ services:
     volumes:
       - ./data/pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     logging:
       driver: "json-file"
       options:

@@ -4,6 +4,7 @@ import os
 import pickle
 import tempfile
 import pandas as pd
+import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -566,3 +567,11 @@ def models_tab(request, project_id):
         return redirect("index")
 
     return render(request, "web/models_tab.html", content)
+
+
+def surface_api(request):
+    url = "http://localhost:8080/api/recent_data/?format=json"
+
+    response = requests.get(url)
+
+    print(response.text)

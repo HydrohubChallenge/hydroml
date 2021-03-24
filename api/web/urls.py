@@ -37,4 +37,5 @@ urlpatterns = [
     path('download_prediction/<int:prediction_id>', views.download_prediction, name='download-prediction'),
     path('project/<int:project_id>/prediction/<int:prediction_id>', views.make_prediction, name='make-prediction'),
     path('create_feature/<int:project_id>', views.create_feature, name='create-feature'),
+    path('api/', views.surface_api, name='surface-api'),
 ]
