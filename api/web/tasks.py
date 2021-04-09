@@ -96,7 +96,6 @@ def train_precipitation_prediction(project_id, pred_id):
         with open(filename_model, "wb") as f:
             pickle.dump(clf, f)
 
-
         disp = metrics.confusion_matrix(y_test, y_pred, normalize='true')
         disp = disp.round(decimals=4)
 

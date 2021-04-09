@@ -13,8 +13,12 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
+
+router = DefaultRouter()
+# router.register(r'prediction', views.ApiDataViewSet)
 
 urlpatterns = [
     path('', views.index, name = 'index'),
@@ -37,5 +41,5 @@ urlpatterns = [
     path('download_prediction/<int:prediction_id>', views.download_prediction, name='download-prediction'),
     path('project/<int:project_id>/prediction/<int:prediction_id>', views.make_prediction, name='make-prediction'),
     path('create_feature/<int:project_id>', views.create_feature, name='create-feature'),
-    path('api/', views.surface_api, name='surface-api'),
+    path('api/predict/', views.api_prediction),
 ]

@@ -10,10 +10,15 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
-from django.http import FileResponse, HttpResponseRedirect
+from django.http import FileResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.translation import get_language
 from keras.models import load_model
+
+from rest_framework import viewsets, permissions, status, authentication
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 
 from .forms import ProjectCreate, ProjectLabelCreate, ProjectFeatureInlineFormset, ProjectPredictionUploadFile
 from .models import Project, ProjectLabel, ProjectPrediction, ProjectFeature
@@ -569,9 +574,49 @@ def models_tab(request, project_id):
     return render(request, "web/models_tab.html", content)
 
 
-def surface_api(request):
-    url = "http://localhost:8080/api/recent_data/?format=json"
+@api_view(['GET', 'POST'])
+def api_prediction(request):
+    if request.method == 'POST':
+        data = request.data
+        json_data = json.loads(json.dumps(data))
+        dataframe = pd.DataFrame.from_records(json_data['data'])
 
-    response = requests.get(url)
+        project_id = int(json_data['project_id'])
+        prediction_id = int(json_data['prediction_id'])
 
-    print(response.text)
+        try:
+            project_sel = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({"error": "Project ID not found."})
+
+        try:
+            project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
+        except ProjectPrediction.DoesNotExist:
+            return Response({"error": "Prediction ID not found."})
+
+        project_features = ProjectFeature.objects.filter(project_id=project_id)
+
+        model_file = project_prediction.serialized_prediction_file.name
+
+        input_column_names = []
+
+        for project_feature in project_features:
+            if project_feature.type == ProjectFeature.Type.INPUT:
+                input_column_names.append(project_feature.column)
+
+        data_prediction = dataframe[input_column_names]
+
+        if project_sel.type == Project.Type.RAINFALL:
+            loaded_model = pickle.load(open(model_file, 'rb'))
+            prediction = loaded_model.predict(data_prediction)
+            prediction = pd.Series(prediction, name='prediction')
+            data_prediction.reset_index(inplace=True)
+            export_df = pd.concat([dataframe, prediction], axis=1)
+            result = export_df.to_json(orient="records")
+            return Response(result)
+
+        elif project_sel.type == Project.Type.WATER_LEVEL:
+            loaded_model = load_model(model_file)
+            # to be implemented
+
+    return Response({"message": "Waiting data..."})
