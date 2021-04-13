@@ -50,7 +50,7 @@
                            <tr>
                              <td></td>
                              <td>
-                                 <a class="btn btn-lg btn-warning" href="javascript:history.go(-1)">{% translate " Return" %}</a>
+                                 <a class="btn btn-lg btn-warning" href="{% url 'update-project' project_id=project_id %}">{% translate " Return" %}</a>
                                  <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
                              </td>
                            </tr>
