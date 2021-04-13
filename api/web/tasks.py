@@ -403,6 +403,8 @@ def train_water_level_prediction(project_id, pred_id):
         class_balancing = True
 
         project = Project.objects.get(id=project_id)
+        project_features = ProjectFeature.objects.filter(project_id=project_id)
+
         csv_delimiter = project.delimiter
         csv_file = os.path.join(settings.MEDIA_ROOT, project.dataset_file.name)
         file = open(csv_file, 'r')
@@ -473,6 +475,21 @@ def train_water_level_prediction(project_id, pred_id):
             # Save the new model
             model.save(full_model_name)
 
+        input_column_names = []
+        skip_column_names = []
+        target_column_name = None
+        timestamp_column_name = None
+
+        for project_feature in project_features:
+            if project_feature.type == ProjectFeature.Type.INPUT:
+                input_column_names.append(project_feature.column)
+            elif project_feature.type == ProjectFeature.Type.SKIP:
+                skip_column_names.append(project_feature.column)
+            elif project_feature.type == ProjectFeature.Type.TARGET:
+                target_column_name = project_feature.column
+            elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
+                timestamp_column_name = project_feature.column
+
         # Save the models
         save_model_file(
             model_name=model_name, model=clf.model,
@@ -480,15 +497,37 @@ def train_water_level_prediction(project_id, pred_id):
         )
 
         accu = clf.estimator.history['acc'][-1]
-        # precision = metrics.precision_score(y_test, predictions)
-        # recall = metrics.recall_score(y_test, predictions)
-        # f1 = metrics.f1_score(y_test, predictions)
+        precision = 0
+        recall = 0
+        f1 = 0
 
         output_file = f'{os.path.dirname(filename_model)}/{model_name}'
+
+        array = []
+        for item in confusion_matrix:
+            for i in item:
+                array.append(i)
+
+        input_column = json.dumps(input_column_names)
+        target_column = json.dumps(target_column_name)
+        timestamp_column = json.dumps(timestamp_column_name)
+        skip_column = json.dumps(skip_column_names)
+
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
                                                             confusion_matrix=confusion_matrix,
+                                                            confusion_matrix_array=array,
                                                             accuracy=accu,
-                                                            serialized_prediction_file=output_file)
+                                                            precision=precision,
+                                                            recall=recall,
+                                                            f1_score=f1,
+                                                            serialized_prediction_file=output_file,
+                                                            input_features=input_column.translate(
+                                                                {ord('['): None, ord(']'): None, ord(','): '\n'}),
+                                                            timestamp_features=timestamp_column,
+                                                            skip_features=skip_column.translate(
+                                                                {ord('['): None, ord(']'): None, ord(','): '\n'}),
+                                                            target_features=target_column
+                                                            )
     except Exception as e:
         print(f'train_water_level_prediction Error: {e}')
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)
