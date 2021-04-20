@@ -581,23 +581,20 @@ def api_prediction(request):
         json_data = json.loads(json.dumps(data))
         dataframe = pd.DataFrame.from_records(json_data['data'])
 
-        project_id = int(json_data['project_id'])
         prediction_id = int(json_data['prediction_id'])
 
         try:
-            project_sel = Project.objects.get(id=project_id)
+            project_prediction = ProjectPrediction.objects.get(id=prediction_id)
+            project_sel = project_prediction.project
+            project_features = ProjectFeature.objects.filter(project_id=project_sel.id)
+        except ProjectPrediction.DoesNotExist :
+            return Response({"error": "Prediction ID not found."})
         except Project.DoesNotExist:
             return Response({"error": "Project ID not found."})
-
-        try:
-            project_prediction = ProjectPrediction.objects.get(id=int(prediction_id))
-        except ProjectPrediction.DoesNotExist:
-            return Response({"error": "Prediction ID not found."})
-
-        project_features = ProjectFeature.objects.filter(project_id=project_id)
+        except ProjectFeature.DoesNotExist:
+            return Response({"error": "Project Features not found."})
 
         model_file = project_prediction.serialized_prediction_file.name
-
         input_column_names = []
 
         for project_feature in project_features:

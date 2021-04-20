@@ -20,6 +20,7 @@ services:
         max-file: "10"
 
   api:
+    container_name: hydroml-api
     build: ./docker/django
     command: sh /entrypoint.sh
     env_file:
@@ -31,6 +32,9 @@ services:
     ports:
       - "8070:8000"
       - "9990:9999"
+    networks:
+      - default
+      - surface_integration
     depends_on:
       - db
     logging:
@@ -82,3 +86,8 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "8050:8050"
+
+networks:
+  surface_integration:
+    external:
+      name: surface_integration
