@@ -97,6 +97,7 @@
             <thead>
                 <tr>
                     <th scope="col"></th>
+                    <th scope="col" class="text-center">ID</th>
                     <th scope="col" class="text-center">Start</th>
                     <th scope="col" class="text-center">Finish</th>
                     <th scope="col" class="text-center">Accuracy</th>
@@ -117,6 +118,7 @@
                     {% if pred.status == 1 %}
                     <tr>
                         <td><span class="badge badge-success">Success</span></td>
+                        <td class="text-center">{{ pred.id }}</td>
                         <td class="text-center">{{ pred.created_at|date:"d/m/Y g:i:s a" }}</td>
                         <td class="text-center">{{ pred.updated_at|date:"d/m/Y g:i:s a" }}</td>
                         <td class="text-center">{{ pred.accuracy|stringformat:".4f" }}</td>
@@ -180,6 +182,7 @@
                         {% elif pred.status == 3%}
                             <td><span class="badge badge-danger">Error</span></td>
                         {% endif %}
+                        <td>{{ pred.id}}</td>
                         <td>{{ pred.created_at }}</td>
                         <td></td>
                         <td></td>
