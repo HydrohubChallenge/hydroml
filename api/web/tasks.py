@@ -3,25 +3,29 @@ import json
 import os
 import pickle
 import random
-from dataclasses import dataclass
-from psycopg2.extensions import register_adapter, AsIs
+import sys
 
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import sklearn.neural_network
-import tensorflow
+import seaborn as sns
+# LSTM requirements
+import tensorflow as tf
 from celery import shared_task
 from django.conf import settings
-from keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D, Dense, Dropout, Input, LSTM, Bidirectional, Flatten
-from keras.models import Sequential, Model
+from keras.layers import Dense
+from keras.layers import LSTM as LSTM_keras
+from keras.models import Sequential
+from keras.models import model_from_json
+from psycopg2.extensions import register_adapter, AsIs
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import label_binarize
+from sklearn.metrics import mean_squared_error
 
 from .models import Project, ProjectPrediction
 from .models import ProjectFeature
-
+from django.utils import timezone
 
 def adapt_numpy_array(numpy_array):
     print(AsIs(tuple(numpy_array)))
@@ -78,7 +82,8 @@ def train_precipitation_prediction(project_id, pred_id):
                                                     target_column_name,
                                                     datetime.datetime(2020, 11, 1).date())
 
-        clf = RandomForestClassifier(max_depth=7, n_estimators=250)
+        # clf = RandomForestClassifier(max_depth=7, n_estimators=250)
+        clf = RandomForestClassifier(max_depth=4, n_estimators=100)
 
         clf.fit(X_train, y_train)
 
@@ -122,7 +127,8 @@ def train_precipitation_prediction(project_id, pred_id):
                                                             timestamp_features=timestamp_column,
                                                             skip_features=skip_column.translate(
                                                                 {ord('['): None, ord(']'): None, ord(','): '\n'}),
-                                                            target_features=target_column
+                                                            target_features=target_column,
+                                                            updated_at=datetime.datetime.now(tz=timezone.utc)
                                                             )
     except Exception as e:
         print(f'train_precipitation_prediction Error: {e}')
@@ -131,366 +137,752 @@ def train_precipitation_prediction(project_id, pred_id):
 
 @shared_task
 def train_water_level_prediction(project_id, pred_id):
-    @dataclass
-    class KerasMLP:
-        epochs = 5
-        # epochs = 300
-        layer_activation = 'relu'
-        output_activation = 'softmax'
-        optimizer = "adam"
-        loss_function = 'categorical_crossentropy'
-        batch_size = 50
-        # batch_size = 10
-        estimator = None
-        model = None
+    # Number of minutes to aggregate the data
+    MINUTES = 1
 
-        def default_algorithm(self, input_dim: int = None, out_dim: int = None):
+    # Where the test data start
+    TEST_INIT_DATE = datetime.datetime(2020, 12, 1).date()
 
-            def compute_appends(ni, no):
-                n = []
+    # Size of the look back
+    LOOK_BACK = 12
 
-                while ni != no:
+    # The csv station ("santa_elena" or "hawkesworth_bridge")
+    STATION = "hawkesworth_bridge"
 
-                    if no > int(ni / 2):
-                        if ni not in n:
-                            n.append(int(ni))
-                        break
+    # Factor to multiply by MAPE in classification step
+    FACTOR = 10
 
-                    if ni % 2 == 0:
-                        ni = ni / 2
-                    else:
-                        ni = (ni + 1) / 2
+    # Set the random state to "1" to get reproducible results
+    def reset_random_seeds():
 
-                    n.append(int(ni))
+        # 1. Set the `PYTHONHASHSEED` environment variable at a fixed value
+        os.environ["PYTHONHASHSEED"] = str(1)
 
-                if no in n:
-                    n.remove(no)
+        # 2. Set the `tensorflow` pseudo-random generator at a fixed value
+        tf.random.set_seed(1)
 
-                return n
+        # 3. Set the `numpy` pseudo-random generator at a fixed value
+        np.random.seed(1)
 
+        # 4. Set the `python` built-in pseudo-random generator at a fixed value
+        random.seed(1)
+
+    # Gets the "measured" time series and transform it in a supervised problem
+    # If the serie is: [1, 2, 3, 4, 5, 6] and the look_back is 3
+    # The data: [1, 2, 3], [2, 3, 4], [3, 4, 5]
+    # The labels: 4, 5 and 6
+    def create_supervised_data(original_data, look_back):
+
+        new_data = original_data.copy()
+
+        # Organize the data with look back
+        # Features (remove first NaN columns)
+        for shift in range(look_back, 0, -1):
+            new_data[f"shift_{look_back - shift}"] = original_data["measured"].shift(periods=shift).iloc[look_back:]
+
+        # Labels
+        new_data["labels"] = original_data["measured"]
+        new_data = new_data.iloc[look_back:]
+
+        return new_data
+
+    # Get shift columns and labels column
+    def get_columns(look_back):
+        x_columns = ["shift_{}".format(shift) for shift in range(look_back)]
+        y_columns = "labels"
+
+        return x_columns, y_columns
+
+    # MAPE calc of all predictions
+    def get_MAPE(predicted, expected):
+        mape = np.mean(np.abs((expected - predicted) / expected))
+
+        return (mape)
+
+    # Split the data into train and test set. Train: data before the "day". Test: data after the "day"
+    def split_dataset(df, day, look_back):
+
+        # Get columns of interest
+        x_columns, y_column = get_columns(look_back)
+        df = df.reset_index()
+
+        # Get train data
+        df_slice = df[df.datetime.dt.date < day]
+        X_train = df_slice[x_columns]
+        y_train = df_slice[y_column]
+
+        # Get test data
+        df_slice = df[df.datetime.dt.date >= day]
+        X_test = df_slice[x_columns]
+        y_test = df_slice[y_column]
+
+        print("  Train:")
+        print("    - X_train: {}".format(X_train.shape))
+        print("    - y_train: {}".format(y_train.shape))
+
+        print("\n  Test:")
+        print("    - X_test: {}".format(X_test.shape))
+        print("    - y_test: {}".format(y_test.shape))
+
+        # Put in a dictionary
+        train_data = {"data": X_train, "labels": y_train}
+        test_data = {"data": X_test, "labels": y_test}
+
+        return train_data, test_data
+
+    # LSTM Model
+    class LSTM:
+
+        # --------------------------------------------------------------------------------
+
+        # Initialize the hyperparameters. Sets to default value if some param is "None"
+        def init(self, look_back, n_samples, params=None):
+
+            # To get reproductible results
+            reset_random_seeds()
+
+            # If params is None, set all the hyperparams to None (to get default values)
+            if params is None:
+                # Default:
+                params = {
+                    # First Layer
+                    "units_1": 50,
+                    "activation_1": "sigmoid",
+                    "recurrent_activation_1": "relu",
+                    "use_bias_1": True,
+                    "unit_forget_bias_1": True,
+                    "dropout_1": 0.0,
+                    "recurrent_dropout_1": 0.0,
+                    "return_sequences_1": True,
+                    "return_state_1": False,
+                    "go_backwards_1": False,
+                    "stateful_1": 0.0,
+                    "unroll_1": False,
+
+                    # Second Layer
+                    "units_2": 50,
+                    "activation_2": "sigmoid",
+                    "recurrent_activation_2": "relu",
+                    "use_bias_2": True,
+                    "unit_forget_bias_2": True,
+                    "dropout_2": 0.0,
+                    "recurrent_dropout_2": 0.0,
+                    "return_sequences_2": False,
+                    "return_state_2": False,
+                    "go_backwards_2": False,
+                    "stateful_2": 0.0,
+                    "unroll_2": False,
+
+                    # General
+                    "epochs": 5,
+                    "batch_size": 1,
+                    "loss": "mean_squared_error",
+                    "optimizer": "adam"
+                }
+
+            # Model Hyperparameters (first layer)
+            self.units_1 = params["units_1"]
+            self.activation_1 = params["activation_1"]
+            self.recurrent_activation_1 = params["recurrent_activation_1"]
+            self.use_bias_1 = params["use_bias_1"]
+            self.unit_forget_bias_1 = params["unit_forget_bias_1"]
+            self.dropout_1 = params["dropout_1"]
+            self.recurrent_dropout_1 = params["recurrent_dropout_1"]
+            self.return_sequences_1 = params["return_sequences_1"]
+            self.return_state_1 = params["return_state_1"]
+            self.go_backwards_1 = params["go_backwards_1"]
+            self.stateful_1 = params["stateful_1"]
+            self.unroll_1 = params["unroll_1"]
+
+            # Model Hyperparameters (second layer)
+            self.units_2 = params["units_2"]
+            self.activation_2 = params["activation_2"]
+            self.recurrent_activation_2 = params["recurrent_activation_2"]
+            self.use_bias_2 = params["use_bias_2"]
+            self.unit_forget_bias_2 = params["unit_forget_bias_2"]
+            self.dropout_2 = params["dropout_2"]
+            self.recurrent_dropout_2 = params["recurrent_dropout_2"]
+            self.return_sequences_2 = params["return_sequences_2"]
+            self.return_state_2 = params["return_state_2"]
+            self.go_backwards_2 = params["go_backwards_2"]
+            self.stateful_2 = params["stateful_2"]
+            self.unroll_2 = params["unroll_2"]
+
+            # General
+            self.epochs = params["epochs"]
+            self.batch_size = params["batch_size"]
+            self.loss = params["loss"]
+            self.optimizer = params["optimizer"]
+
+            # Dimensions
+            self.n_timesteps = look_back
+            self.n_features = 1
+            self.n_outputs = 1
+            self.n_samples = n_samples
+
+            # Other params
+            self.model = None
+            self.model_fit = None
+
+        # --------------------------------------------------------------------------------
+
+        # Create and compile the model
+        def build(self):
+
+            # Create the model
             self.model = Sequential()
-            self.model.add(Dense(input_dim, activation=self.layer_activation, input_dim=input_dim))
 
-            ns = compute_appends(input_dim, out_dim)
-            for n in ns:
-                self.model.add(Dense(n, activation=self.layer_activation))
-                # self.model.add(Dropout(0.2))
+            # First Layer
+            self.model.add(LSTM_keras(units=self.units_1,
+                                      batch_input_shape=(self.batch_size, self.n_timesteps, self.n_features),
+                                      activation=self.activation_1,
+                                      recurrent_activation=self.recurrent_activation_1,
+                                      use_bias=self.use_bias_1,
+                                      unit_forget_bias=self.unit_forget_bias_1,
+                                      dropout=self.dropout_1,
+                                      recurrent_dropout=self.recurrent_dropout_1,
+                                      return_sequences=self.return_sequences_1,
+                                      return_state=self.return_state_1,
+                                      go_backwards=self.go_backwards_1,
+                                      stateful=self.stateful_1,
+                                      unroll=self.unroll_1))
 
-            self.model.add(Dense(out_dim, activation=self.output_activation))
+            # Second Layer
+            self.model.add(LSTM_keras(units=self.units_2,
+                                      activation=self.activation_2,
+                                      recurrent_activation=self.recurrent_activation_2,
+                                      use_bias=self.use_bias_2,
+                                      unit_forget_bias=self.unit_forget_bias_2,
+                                      dropout=self.dropout_2,
+                                      recurrent_dropout=self.recurrent_dropout_2,
+                                      return_sequences=self.return_sequences_2,
+                                      return_state=self.return_state_2,
+                                      go_backwards=self.go_backwards_2,
+                                      stateful=self.stateful_2,
+                                      unroll=self.unroll_2))
 
-            return self
+            # Output Layer
+            self.model.add(Dense(self.n_outputs))
 
-        def compile_model(self):
-            self.model.compile(
-                optimizer=self.optimizer,
-                loss=self.loss_function,
-                metrics=['acc']
-            )
+            # Compile the model
+            self.model.compile(loss=self.loss, optimizer=self.optimizer)
 
-        def train_model(self, x_train, y_train, x_train_validation=None, y_train_validation=None):
+        # --------------------------------------------------------------------------------
 
-            # 1) Compile the model
-            self.compile_model()
+        # Flatten the data and train the model
+        def train(self, train):
 
-            # 2) Fit the model
-            self.estimator = self.model.fit(
-                x_train, y_train,
-                validation_data=(x_train_validation, y_train_validation),
-                epochs=self.epochs,
-                batch_size=self.batch_size,
-                verbose=1,
-                shuffle=False
-            )
+            # Flatten data
+            train_data = train["data"].to_numpy()
+            train_data = train_data.reshape(train_data.shape[0], self.n_timesteps, self.n_features)
 
-        def mlp_scikit(
-                self,
-                input_dim=None,
-                out_dim=None,
-                layer_activation=None,
-                output_activaton=None
-        ):
-            self.model = sklearn.neural_network.MLPClassifier()
+            train_labels = train["labels"].to_numpy()
+            train_labels = train_labels.reshape(train_labels.shape[0], 1)
 
-        def cnn(
-                self,
-                input_dim=None,
-                out_dim=None,
-                layer_activation=None,
-                output_activaton=None
-        ):
-            # 1-D Convolutional Neural Network
-            inputs = Input(shape=(input_dim, 1))
-            x = Conv1D(32, 4, strides=1, padding='same', activation=layer_activation)(inputs)
-            x = MaxPooling1D(pool_size=4)(x)
-            x = Conv1D(64, 4, strides=1, padding='same', activation=layer_activation)(x)
-            x = GlobalMaxPooling1D()(x)
-            outputs = Dense(out_dim, activation=output_activaton)(x)
-            self.model = Model(inputs=inputs, outputs=outputs, name='CNN')
-            return self
+            # Train
+            self.model_fit = self.model.fit(train_data, train_labels, epochs=self.epochs,
+                                            batch_size=self.batch_size, verbose=1)
 
-        def lstm(
-                self,
-                input_dim=None,
-                out_dim=None
-        ):
-            inputs = Input(shape=(input_dim, 1))
-            x = Bidirectional(
-                LSTM(64, return_sequences=True),
-                merge_mode='concat')(inputs)
-            x = Dropout(0.2)(x)
-            x = Flatten()(x)
-            outputs = Dense(out_dim, activation=self.output_activaton)(x)
-            self.model = Model(inputs=inputs, outputs=outputs, name='LSTM')
-            return self
+        # --------------------------------------------------------------------------------
 
-    # -------- make x and y vectors -------------
-    def make_vectors(
-            data: pd.DataFrame = None,
-            horizontal_ti: int = None,
-            class_balancing: bool = True
+        # Flatten the data and predict one example
+        def predict(self, example):
 
-    ):
+            # Flatten data
+            data = np.array(example)
+            data = data.reshape((1, data.shape[0], 1))
 
-        def combine_measured_and_anomalies(
-                data: pd.DataFrame = None
-        ):
+            # forescast the next week
+            prediction = self.model.predict(data, verbose=0)
 
-            # mav = measured or anomalies values
-            data["mav"] = np.where(
-                pd.isna(data["anomaly_value"]),
-                data["measured"],
-                data["anomaly_value"]
-            )
+            # We only want the vector forecast
+            prediction = float(prediction[0][0])
 
-            # -------- mav labels ----------------
-            # Start with all data labeled Normal (N)
-            data["mav_labels"] = "N"
+            return prediction
 
-            # Spikes will get the S label
-            # Stationary Values will get the SV label
-            # Sensor Displacement will get the SD label
-            anomaly_labels = {
-                "Spikes": "S",
-                "Stationary Values": "SV",
-                "Sensor Displacement": "SD"
+        # --------------------------------------------------------------------------------
+
+        # Get the RMSE per week and the overall RMSE
+        def evaluate_forecasts(self, expected, predicted):
+
+            # RMSE per example
+            rmses = []
+            for i in range(expected.shape[0]):
+                mse = mean_squared_error(np.asarray([expected[i]]), np.asarray([predicted[i]]))
+                rmse = np.sqrt(mse)
+                rmses.append(rmse)
+
+            # Overall RMSE
+            rmse_overall = expected - predicted
+            rmse_overall = np.sqrt(np.mean(rmse_overall ** 2))
+
+            return rmses, rmse_overall
+
+        # --------------------------------------------------------------------------------
+
+        # Train and predict the entire test set
+        def evaluate_model(self, train, test):
+
+            # Create and train the model
+            self.train(train)
+
+            # List of predictions
+            predictions = list()
+
+            for i in range(len(test["labels"])):
+                print("\nExample {} / {}\n".format(i, len(test["labels"])))
+
+                # Predict one day
+                example = test["data"].iloc[i, :]
+                prediction = self.predict(example)
+
+                # Store the predictions
+                predictions.append(prediction)
+
+            # Evaluate predictions for each day and overall
+            predicted = np.array(predictions)
+            expected = np.array(test["labels"])
+
+            scores, score = self.evaluate_forecasts(expected, predicted)
+
+            results = {"predicted": predicted, "expected": expected, "overall_score": score, "daily_scores": scores}
+
+            return results
+
+        # --------------------------------------------------------------------------------
+
+        # Predict the entire test set
+        def evaluate_model_no_train(self, train, test):
+
+            # List of predictions
+            predictions = list()
+            # --------------------------------------------------------------------------------
+
+            # ------------------------------ Progress Bar --------------------------------
+
+            initial_increment = int(len(test["labels"]) // 100.0)
+            increment = initial_increment
+
+            sys.stdout.write('\r')
+            sys.stdout.write("[%-100s] %d%%" % ('=' * 0, 0))
+            sys.stdout.flush()
+
+            j = 1
+            for i in range(len(test["labels"])):
+
+                if i == increment:
+                    sys.stdout.write('\r')
+                    sys.stdout.write("[%-100s] %d%%" % ('=' * j, j))
+                    sys.stdout.flush()
+                    increment += initial_increment
+                    j += 1
+                # ---------------------------------------------------------------------------
+
+                # Predict one day
+                example = test["data"].iloc[i, :]
+                prediction = self.predict(example)
+
+                # Store the predictions
+                predictions.append(prediction)
+
+            # Evaluate predictions for each day and overall
+            predicted = np.array(predictions)
+            expected = np.array(test["labels"])
+
+            scores, score = self.evaluate_forecasts(expected, predicted)
+
+            results = {"predicted": predicted, "expected": expected, "overall_score": score, "daily_scores": scores}
+
+            return results
+
+        # --------------------------------------------------------------------------------
+
+        # Save the network
+        def save(self, filename):
+            filename_model = "{}.json".format(filename)
+            filename_weights = "{}-weights.h5".format(filename)
+
+            # Save the model
+            modelJson = self.model.to_json()
+            with open(filename_model, "w") as jsonFile:
+                jsonFile.write(modelJson)
+
+            # Save the weights
+            self.model.save_weights("{}".format(filename_weights))
+
+        # --------------------------------------------------------------------------------
+
+        # Load the model and the weights
+        def load(self, filename):
+
+            # Load the json
+            json_file = open("{}.json".format(filename, 'r'))
+            loaded_model_json = json_file.read()
+            json_file.close()
+
+            loaded_model = model_from_json(loaded_model_json)
+
+            # Load the weights into the model
+            loaded_model.load_weights("{}-weights.h5".format(filename))
+            print("Loaded model from disk")
+
+            return loaded_model
+
+        # --------------------------------------------------------------------------------
+
+        # Print the hyperparameters used
+        def show_hyperparameters(self):
+            print("LSTM Hyperparameters:")
+            print("\n  First Layer:")
+            print("    - Units: {}".format(self.units_1))
+            print("    - Activation: {}".format(self.activation_1))
+            print("    - Recurrent Activation: {}".format(self.recurrent_activation_1))
+            print("    - Use Bias: {}".format(self.use_bias_1))
+            print("    - Unit Forget Bias: {}".format(self.unit_forget_bias_1))
+            print("    - Dropout: {}".format(self.dropout_1))
+            print("    - Recurrent Dropout: {}".format(self.recurrent_dropout_1))
+            print("    - Return Sequences: {}".format(self.return_sequences_1))
+            print("    - Return State: {}".format(self.return_state_1))
+            print("    - Go Backwards: {}".format(self.go_backwards_1))
+            print("    - Stateful: {}".format(self.stateful_1))
+            print("    - Unroll: {}".format(self.unroll_1))
+
+            print("\n  Second Layer:")
+            print("    - Units: {}".format(self.units_2))
+            print("    - Activation: {}".format(self.activation_2))
+            print("    - Recurrent Activation: {}".format(self.recurrent_activation_2))
+            print("    - Use Bias: {}".format(self.use_bias_2))
+            print("    - Unit Forget Bias: {}".format(self.unit_forget_bias_2))
+            print("    - Dropout: {}".format(self.dropout_2))
+            print("    - Recurrent Dropout: {}".format(self.recurrent_dropout_2))
+            print("    - Return Sequences: {}".format(self.return_sequences_2))
+            print("    - Return State: {}".format(self.return_state_2))
+            print("    - Go Backwards: {}".format(self.go_backwards_2))
+            print("    - Stateful: {}".format(self.stateful_2))
+            print("    - Unroll: {}".format(self.unroll_2))
+
+            print("\n  General:")
+            print("    - Epochs: {}".format(self.epochs))
+            print("    - Batch Size: {}".format(self.batch_size))
+            print("    - Loss: {}".format(self.loss))
+            print("    - Optimizer: {}\n".format(self.optimizer))
+
+            print("\n  Dimensions:")
+            print("    - Number of Timesteps: {}".format(self.n_timesteps))
+            print("    - Number of Features: {}".format(self.n_features))
+            print("    - Number of Outputs: {}\n".format(self.n_outputs))
+
+        # --------------------------------------------------------------------------------
+
+        # Show the dimensions of the network
+        def show_architecture(self):
+            print("\nNetwork Architecture:\n")
+            self.model.summary()
+            print("\n")
+
+        # --------------------------------------------------------------------------------
+
+        # Show the overall RMSE and the daily RMSE
+        def summarize_scores(self, score, scores):
+
+            print("\n\nLSTM Model Scores:\n")
+            print("  - Overall RMSE: {:.4}\n".format(score))
+            print("  - Daily RMSEs:\n")
+            print("        day   rmse")
+            for index, rmse in enumerate(scores):
+                print("        {}{} => {:.4}".format("0" if index < 11 else "", index + 1, rmse))
+        # --------------------------------------------------------------------------------
+
+    # ------------------------------------------------------------------------------------
+    # After getting the regression, the next step is use a threshold based classifier
+    class Classifier:
+
+        # --------------------------------------------------------------------------------
+
+        exp_classes = None
+        pred_classes = None
+        mav = None
+        misses = []
+
+        # --------------------------------------------------------------------------------
+
+        # Set some variables
+        def init(self):
+            self.exp_classes = None
+            self.pred_classes = None
+            self.mav = None
+            self.misses = []
+
+        # --------------------------------------------------------------------------------
+
+        # Get mav data (measure + anomaly data)
+        def get_mav_data(self, predicted, raw_data):
+
+            # Size of test set
+            last_test_values = predicted.shape[0]
+            mav = np.where(pd.isna(raw_data["anomaly_value"]), raw_data["measured"], raw_data["anomaly_value"])
+            mav = mav[-last_test_values:]
+            self.mav = mav
+
+            return mav
+
+        # --------------------------------------------------------------------------------
+
+        # Get the expected classes
+        def get_expected_classes(self, expected, mav=None):
+
+            # Stored inside the class
+            if mav is None:
+                mav = self.mav
+
+            exp_classes = []
+            for index, result in enumerate(expected):
+
+                # If it's equal, than it is a normal data
+                if result == mav[index]:
+                    exp_classes.append(0)
+
+                # Otherwise, it's an anomaly data
+                else:
+                    exp_classes.append(1)
+
+            self.exp_classes = exp_classes
+
+            return exp_classes
+
+        # --------------------------------------------------------------------------------
+
+        # Make the classification based on MAPE calc
+        def get_classification(self, predicted, limit, mav=None):
+
+            # Stored inside the class
+            if mav is None:
+                mav = self.mav
+
+            classification = []
+
+            for index, prediction in enumerate(predicted):
+
+                # Calculates the MAPE
+                mape = np.abs((mav[index] - prediction) / mav[index])
+
+                # MAPE is greater than limit: it is an anomaly
+                if mape > limit:
+
+                    # Indicates that the example is an anomaly
+                    classification.append(1)
+
+                # Otherwise, it is a normal data
+                else:
+
+                    # Indicates that the example is not an anomaly
+                    classification.append(0)
+
+            self.pred_classes = classification
+
+            return classification
+
+        # --------------------------------------------------------------------------------
+
+        # Calculate the accuracy, precision, recall and f1 score of the classification
+        def get_metrics(self, anomaly_type, expected=None, predicted=None):
+
+            if expected is None:
+                expected = self.exp_classes
+
+            if predicted is None:
+                predicted = self.pred_classes
+
+            TP = 0  # True Positive
+            TN = 0  # True Negative
+            FP = 0  # False Positive
+            FN = 0  # False Negative
+
+            classification = []
+
+            for index, prediction in enumerate(predicted):
+
+                # If it is right
+                if expected[index] == prediction:
+
+                    # If it is an anomaly
+                    if prediction == 1:
+                        TP += 1
+
+                    # If it is a normal data
+                    else:
+                        TN += 1
+
+                # Otherwise, it is wrong
+                else:
+
+                    # Get the index where the error appear
+                    self.misses.append(index)
+
+                    # If it is an anomaly
+                    if prediction == 1:
+                        FP += 1
+
+                    # If it is a normal data
+                    else:
+                        FN += 1
+
+            if anomaly_type == "s+sv+sd":
+                print("Spike (S) and Stationary Value (SV) and Sensor Displacement (SD):")
+
+            elif anomaly_type == "sv+sd":
+                print("Stationary Value (SV) and Sensor Displacement (SD):")
+
+            elif anomaly_type == "s+sd":
+                print("Spike (S) and Sensor Displacement (SD):")
+
+            elif anomaly_type == "s+sv":
+                print("Spike (S) and Stationary Value (SV):")
+
+            elif anomaly_type == "sv":
+                print("Stationary Value (SV):")
+
+            elif anomaly_type == "sd":
+                print("Sensor Displacement (SD):")
+
+            else:
+                print("Spike (S):")
+
+            print("\n  General:")
+            print("    - TP: {}".format(TP))
+            print("    - TN: {}".format(TN))
+            print("    - FP: {}".format(FP))
+            print("    - FN: {}".format(FN))
+            print("    - Hits: {}".format(TP + TN))
+            print("    - Misses: {}".format(FN + FP))
+            print("    - Total (hits + misses): {}".format(TP + TN + FP + FN))
+
+            total = TP + TN + FP + FN
+            accuracy = (TP + TN) / (TP + TN + FP + FN)
+            precision = TP / (TP + FP)
+            recall = TP / (TP + FN)
+            f1_score = 2 * ((precision * recall) / (precision + recall))
+            confusion_matrix = [TN/total, FN/total, FP/total, TP/total]
+
+            print("\n  Metrics:")
+            print("    - Accuracy: {:.4}%".format(accuracy * 100.0))
+            print("    - Precision: {:.4}%".format(precision * 100.0))
+            print("    - Recall: {:.4}%".format(recall * 100.0))
+            print("    - F1-Score: {:.4}%".format(f1_score * 100.0))
+
+            metrics = {
+                "accuracy": round(accuracy, 4),
+                "precision": round(precision, 4),
+                "recall": round(recall, 4),
+                "f1_score": round(f1_score, 4),
+                "confusion_matrix": confusion_matrix,
             }
-            for anomaly_name in ["Spikes", "Stationary Values", "Sensor Displacement"]:
-                data["mav_labels"] = np.where(
-                    data["anomaly_name"] == anomaly_name,
-                    anomaly_labels[anomaly_name],
-                    data["mav_labels"]
-                )
-            # -------- mav labels ----------------
 
-            return data
+            return metrics
 
-        def add_horizontal_scale(
-                horizontal_ti: int = None,
-                data: pd.DataFrame = None
-        ):
+        # --------------------------------------------------------------------------------
 
-            # ------------------------------ Time interval ------------------------------------------
-            # The steps are:
-            # 1) For each dt = 5 minutes add a date (shift_dt_d) to the dataframe, that is,
-            # add the horizontal scale
-            # 2) Where mav (the column with data measurements and anomalies values) == shift_dt_d add the
-            # measure or anomaly value, that is, convert the dates in the horizontal scale into values
+        # Function that plots the expected vs predicted vs mav values and draw a rectangle on anomalies (just FN)
+        def show_the_wrongs_predictions(self, predicted, expected, all_datetime, miss_index, anomaly_type, mav=None):
 
-            # 1) For each dt = 5 minutes add a date (shift_dt_d) to the dataframe
-            for dt in range(horizontal_ti):
-                # Add the dates that represents the horizontal scale
-                data[f"shift_{dt}_d"] = data["datetime"] - datetime.timedelta(minutes=5 * dt)
+            if len(self.misses) == 0:
+                print("\n\nThe classification hit all the predictions\n\n")
+                return
 
-                # The code below is used to remove cases that do not
-                # have enough measurements in the horizontal scale as examples of such cases
-                # see the dates below
-                # 2020-06-27T01:45:00Z -   2020-06-27T02:00:00Z =  15 minutes
-                # 2020-07-15T05:30:00Z -   2020-07-15T05:50:00Z =  20 minutes
-                # 2020-11-02T14:45:00Z -   2020-11-02T15:35:00Z =  50 minutes
-                data[f"shift_{dt}_d"][
-                    ~data[f"shift_{dt}_d"].isin(data["datetime"])
-                ] = pd.NA
+            if mav is None:
+                mav = self.mav
 
-                # Not working
-                # data = data[data[f"shift_{dt}_d"].notna()]
+            start = self.misses[miss_index] - 10
+            end = self.misses[miss_index] + 10
 
-            # 2) Transform the dates from the horizontal scale into values
-            for dt in range(horizontal_ti):
-                data[f"shift_{dt}_v"] = np.where(
-                    data[f"shift_{dt}_d"] == data["datetime"].shift(periods=dt),
-                    data["mav"].shift(periods=dt),
-                    pd.NA
-                )
+            start = 0 if (start < 0) else start
+            end = len(predicted) if (end > len(predicted)) else end
 
-            # Remove the cases without enough measurements in the horizontal scale
-            for dt in range(horizontal_ti):
-                data = data[data[f"shift_{dt}_d"].notna()]
-            # ---------------------------------------------------------------------------------------
+            # Get the datetime of test of
+            x_axis = all_datetime[all_datetime.date >= TEST_INIT_DATE]
+            x_axis = x_axis[start:end].strftime("%d %b %H:%M")
 
-            return data
+            # Defines the figure size
+            sns.set(rc={'figure.figsize': (11, 10)})
 
-        def make_class_balancing(
-                number_of_samples: int = None,
-                data: pd.DataFrame = None
-        ):
+            # Build the dataframes that will be plot
+            d1 = pd.DataFrame({"Measured": np.asarray(expected[start:end])})
+            d2 = pd.DataFrame({"Predicted": np.asarray(predicted[start:end])})
+            d3 = pd.DataFrame({"Measured and Anomalies": np.asarray(mav[start:end])})
 
-            # ------------------------- balance the number of classes -------------------------------
-            # classes can be a combination of [N, S, SV, SD]
-            classes = data["mav_labels"].unique()
+            # Creates the plot
+            fig, ax = plt.subplots()
+            ax.plot(x_axis, d1, label="Measured", marker="s")
+            ax.plot(x_axis, d2, label="Predicted", marker="s")
+            ax.plot(x_axis, d3, label="Measured and Anomalies", marker="s")
 
-            classes_indexes = {}
-            classes_indexes_balanced = {}
-            for c in classes:
-                # Get the indexes of the class c
-                classes_indexes[c] = data.where(data["mav_labels"] == c)
+            # Draw the rectangles
+            for index in range(start, end):
 
-                # Remove any case with nan
-                classes_indexes[c] = classes_indexes[c].dropna(how='all')
+                # Gets the real measured and the anomaly value (from mav array)
+                measure = np.asarray(expected)[index]
+                anomaly = np.asarray(mav)[index]
 
-                # make a list of the indexes
-                classes_indexes[c] = list(classes_indexes[c].index)
+                # If the measures are different, than an anomaly exists
+                if measure != anomaly:
 
-                # Fo each class c a number_of_samples will be selected randomly
-                classes_indexes_balanced[c] = []
-                for i in range(number_of_samples):
-                    # Randomly select a index for the class c
-                    index = random.choice(classes_indexes[c])
-                    classes_indexes_balanced[c].append(index)
+                    # If the anomaly is above the measure on plot
+                    if anomaly > measure:
 
-            indexes_balanced = []
-            for c in classes:
-                indexes_balanced.extend(classes_indexes_balanced[c])
+                        if anomaly_type == "sv":
+                            padding = 0.01
+                        else:
+                            padding = 0.3
 
-            # Cut the data for the selected indexes
-            data = data.loc[indexes_balanced, :]
+                        # Define the size of the rectangle (y axis)
+                        top = abs(anomaly) + padding
+                        bottom = measure - padding
+                        size = top - bottom
 
-            # Reset the index
-            data = data.reset_index()
-            # --------------------------------------------------
+                        # Creates the rectangle
+                        if index == start + 10:
+                            rect = patches.Rectangle((index - 1 - start, measure - padding), 2, size, linewidth=1,
+                                                     edgecolor='r', facecolor='none')
+                            ax.add_patch(rect)
 
-            return data
+                    # If the anomaly is below the measure on plot
+                    else:
 
-        # Convert the string dates to datetime
-        data["datetime"] = pd.to_datetime(
-            data["datetime"],
-            format="%Y-%m-%dT%H:%M:%SZ", errors='coerce'
-        )
+                        # Define the size of the rectangle (y axis)
+                        top = measure + 0.3
+                        bottom = anomaly - 0.3
+                        size = top - bottom
 
-        # Add a mav (measured or anomalies values) columns in the dataframe
-        # Add a mav labels N (Normal), S (Spikes), SV (Stationary Values), SD (Sensor Displacement)
-        data = combine_measured_and_anomalies(data=data)
+                        # Creates the rectangle
+                        if index == start + 10:
+                            rect = patches.Rectangle((index - 1 - start, anomaly - 0.3), 2, size, linewidth=1,
+                                                     edgecolor='r', facecolor='none')
+                            ax.add_patch(rect)
 
-        # Add the columns related to the horizontal scale
-        data = add_horizontal_scale(horizontal_ti=horizontal_ti, data=data)
+            # Adds subtitle
+            ax.legend()
+            ax.set_ylabel("Measured")
+            ax.set_xlabel("Time")
 
-        # Class balancing
-        if class_balancing:
-            data = make_class_balancing(
-                number_of_samples=80,
-                data=data
-            )
+            plt.xticks(rotation=70)
 
-        # ------------------------------------------ Make the y vector -----------------------------------------------------
-        # Labels for classes
-        # classes can be a combination of [N, S, SV, SD]
-        classes = data["mav_labels"].unique()
-        y_vector = label_binarize(data["mav_labels"], classes=classes)
-        # ------------------------------------------------------------------------------------------------------------------
+            # Adds title and plot it
+            plt.title("LSTM Model: Predicted VS Measured VS Measured and Anomalies")
+            plt.show()
+        # --------------------------------------------------------------------------------
 
-        # ------------------------------------------ Make the x vector -----------------------------------------------------
-        train_columns = [f"shift_{dt}_v" for dt in range(horizontal_ti)]
-        x_train = data[train_columns].astype(float)
-
-        return x_train, y_vector
+    # ------------------------------------------------------------------------------------
 
     try:
-        # ------------------------------------------------
-        # ----------- Global Parameters ------------------
-
-        # Split Methodology = 1 => random data, 75% for training and 25% for validation
-        # Split Methodology = 2 => ------------75%--------------- | --- 25% ---
-        split_methodology = 1
-
-        # hti = the horizontal scale in hours
-        hti = 1
-        horizontal_ti = hti * 12
-
-        # Class balancing = True or False. If false then there will be a lot more "normal" data then anomalies and
-        # processing time will be much higher.
-        class_balancing = True
-
-        project = Project.objects.get(id=project_id)
         project_features = ProjectFeature.objects.filter(project_id=project_id)
+        project = Project.objects.get(id=project_id)
 
         csv_delimiter = project.delimiter
         csv_file = os.path.join(settings.MEDIA_ROOT, project.dataset_file.name)
         file = open(csv_file, 'r')
-        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime', 'updated_at'])
-        path = "models/waterlevel/"
-        model_base_path = os.path.join(settings.MEDIA_ROOT, path)
-
-        x_vec, y_vec = make_vectors(
-            data=data,
-            horizontal_ti=horizontal_ti,
-            class_balancing=class_balancing
-        )
-        # -------------------------------------------
-
-        # ------ DataFrame Diff ----------------------
-        # Procedure for the Stationary Values.
-        # This procedure don't impact the other cases (S and SD).
-        x_vec_temp = x_vec.reset_index(drop=True)
-        x_vec_temp = x_vec_temp.diff(axis=1)
-        x_vec[x_vec_temp == 0.] = -1.
-        # ----------------------------------------------
-
-        # -------------------- Split the vectors into x_train, x_est, y_train and y_test ---------------------------
-        if split_methodology == 1:
-            x_train, x_test, y_train, y_test = train_test_split(
-                x_vec, y_vec, test_size=0.25
-            )
-
-        if split_methodology == 2:
-            x_train, x_test, y_train, y_test = split_past_future_train_test(
-                x_vec, y_vec, test_size=0.25
-            )
-        # ----------------------------------------------------------------------------------------------------------
-
-        clf = KerasMLP().default_algorithm(
-            input_dim=x_train.shape[1],
-            out_dim=y_train.shape[1]
-        )
-
-        # Fit the data
-        clf.train_model(
-            x_train=x_train,
-            y_train=y_train,
-            x_train_validation=x_test,
-            y_train_validation=y_test
-        )
-
-        predictions = clf.model.predict(x_test)
-        confusion_matrix = tensorflow.math.confusion_matrix(y_test.argmax(axis=1), predictions.argmax(axis=1))
-        confusion_matrix = np.array(confusion_matrix)
-        confusion_matrix = confusion_matrix / confusion_matrix.sum()
-
-        # For the Keras models
-        model_name = f"KerasMLP_{clf.model.name}_{str(pred_id)}.h5"
-
-        filename_model = f'{model_base_path}/{project_id}'
-
-        def save_model_file(model, model_name, models_dir):
-            """ Method that saves the model on local directory """
-
-            # Checks if the directory of the models exists
-            if not os.path.exists(models_dir):
-                os.makedirs(models_dir)
-
-            # The full name = directory + name
-            full_model_name = f'{models_dir}/{model_name}'
-
-            # Save the new model
-            model.save(full_model_name)
+        data = pd.read_csv(file, delimiter=csv_delimiter, parse_dates=['datetime'])
+        path = "models/water_level/"
+        model_base_path = os.path.join(settings.MEDIA_ROOT, path, str(project_id))
 
         input_column_names = []
         skip_column_names = []
@@ -507,23 +899,90 @@ def train_water_level_prediction(project_id, pred_id):
             elif project_feature.type == ProjectFeature.Type.TIMESTAMP:
                 timestamp_column_name = project_feature.column
 
-        # Save the models
-        save_model_file(
-            model_name=model_name, model=clf.model,
-            models_dir=os.path.dirname(filename_model)
-        )
+        if len(skip_column_names) > 0:
+            data.drop(skip_column_names, axis=1, inplace=True)
 
-        accu = clf.estimator.history['acc'][-1]
-        precision = 0
-        recall = 0
-        f1 = 0
+        # Shift data using the "LOOK_BACK" (12)
+        data_sup = create_supervised_data(data, LOOK_BACK)
 
-        output_file = f'{os.path.dirname(filename_model)}/{model_name}'
+        # Split data into train and test set
+        train, test = split_dataset(data_sup, TEST_INIT_DATE, LOOK_BACK)
 
-        array = []
-        for item in confusion_matrix:
-            for i in item:
-                array.append(i)
+        # Best params found by the Talos Optimization
+        best_params = {
+            'units_1': 50,
+            'activation_1': 'sigmoid',
+            'recurrent_activation_1': 'relu',
+            'use_bias_1': True,
+            'unit_forget_bias_1': True,
+            'dropout_1': 0.0,
+            'recurrent_dropout_1': 0.0,
+            'return_sequences_1': True,
+            'return_state_1': False,
+            'go_backwards_1': False,
+            'stateful_1': False,
+            'unroll_1': False,
+            'units_2': 50,
+            'activation_2': 'sigmoid',
+            'recurrent_activation_2': 'relu',
+            'use_bias_2': True,
+            'unit_forget_bias_2': True,
+            'dropout_2': 0.0,
+            'recurrent_dropout_2': 0.0,
+            'return_sequences_2': False,
+            'return_state_2': False,
+            'go_backwards_2': False,
+            'stateful_2': False,
+            'unroll_2': False,
+            'optimizer': 'adam',
+            'loss': 'mean_squared_error',
+            'batch_size': 1,
+            # 'epochs': 150,
+            'epochs': 2,
+            'validation_split': 0.1
+        }
+
+        # Loads the trained model
+        filename = "LSTM-measured-regression-model-{0}".format({str(pred_id)})
+        file_path = os.path.join(model_base_path, filename)
+
+        # Create, init, load and evaluate the LSTM
+        # lstm = LSTM()
+        # lstm.init(LOOK_BACK, len(train["labels"]), best_params)
+        # lstm.model = lstm.load(model_base_path)
+        # lstm.show_architecture()
+        # results = lstm.evaluate_model_no_train(train, test)
+
+        # If it needs to retrain
+        lstm = LSTM()
+        lstm.init(LOOK_BACK, len(train["labels"]), best_params)
+        lstm.build()
+        results = lstm.evaluate_model(train, test)
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
+        lstm.save(file_path)
+
+        # Show the results
+        # lstm.summarize_scores(results["overall_score"], results["daily_scores"])
+
+        anomaly_type = "s+sv+sd"
+
+        # Create and init the classifier
+        clf = Classifier()
+        clf.init()
+        clf.exp_classes = data["label"].tolist()
+
+        mape = np.mean(np.abs((results["expected"] - results["predicted"]) / results["expected"]))
+        # Calculates the MAPE
+        mape = get_MAPE(results["predicted"], results["expected"])
+
+        # Defines the limit
+        limit = mape * FACTOR
+        print("\nLimit: {:.4}\n".format(limit))
+
+        # Make the classification and show the metrics
+        clf.get_classification(results["predicted"], limit, data["measured"])
+        metrics = clf.get_metrics(anomaly_type)
 
         input_column = json.dumps(input_column_names)
         target_column = json.dumps(target_column_name)
@@ -531,20 +990,22 @@ def train_water_level_prediction(project_id, pred_id):
         skip_column = json.dumps(skip_column_names)
 
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.SUCCESS,
-                                                            confusion_matrix=confusion_matrix,
-                                                            confusion_matrix_array=array,
-                                                            accuracy=accu,
-                                                            precision=precision,
-                                                            recall=recall,
-                                                            f1_score=f1,
-                                                            serialized_prediction_file=output_file,
+                                                            confusion_matrix=metrics['confusion_matrix'],
+                                                            confusion_matrix_array=metrics['confusion_matrix'],
+                                                            accuracy=metrics['accuracy'],
+                                                            precision=metrics['precision'],
+                                                            recall=metrics['recall'],
+                                                            f1_score=metrics['f1_score'],
+                                                            serialized_prediction_file=model_base_path,
                                                             input_features=input_column.translate(
                                                                 {ord('['): None, ord(']'): None, ord(','): '\n'}),
                                                             timestamp_features=timestamp_column,
                                                             skip_features=skip_column.translate(
                                                                 {ord('['): None, ord(']'): None, ord(','): '\n'}),
-                                                            target_features=target_column
+                                                            target_features=target_column,
+                                                            updated_at=datetime.datetime.now(tz=timezone.utc)
                                                             )
+
     except Exception as e:
         print(f'train_water_level_prediction Error: {e}')
         ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR)
