@@ -40,7 +40,7 @@ urlpatterns = [
     path('download/<int:prediction_id>', views.download_model, name='download-model'),
     path('download_prediction/<int:prediction_id>', views.download_prediction, name='download-prediction'),
     path('project/<int:project_id>/prediction/<int:prediction_id>', views.make_prediction, name='make-prediction'),
-    path('create_feature/<int:project_id>', views.create_feature, name='create-feature'),
-    path('create_parameters/<int:project_id>', views.create_parameters, name='create-parameters'),
+    path('features/<int:project_id>', views.create_feature, name='create-feature'),
+    path('hyperparameters/<int:project_id>', views.create_parameters, name='create-parameters'),
     path('api/predict/', views.api_prediction),
 ]

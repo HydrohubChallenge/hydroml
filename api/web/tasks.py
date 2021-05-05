@@ -39,7 +39,7 @@ register_adapter(np.ndarray, adapt_numpy_array)
 
 @shared_task
 def train_precipitation_prediction(project_id, pred_id):
-    try:
+    # try:
         project_features = ProjectFeature.objects.filter(project_id=project_id)
         project = Project.objects.get(id=project_id)
         pred_model = ProjectPrediction.objects.get(id=pred_id)
@@ -135,10 +135,10 @@ def train_precipitation_prediction(project_id, pred_id):
                                                             target_features=target_column,
                                                             updated_at=datetime.datetime.now(tz=timezone.utc)
                                                             )
-    except Exception as e:
-        print(f'train_precipitation_prediction Error: {e}')
-        ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR,
-                                                            updated_at=datetime.datetime.now(tz=timezone.utc))
+    # except Exception as e:
+    #     print(f'train_precipitation_prediction Error: {e}')
+    #     ProjectPrediction.objects.filter(id=pred_id).update(status=ProjectPrediction.StatusType.ERROR,
+    #                                                         updated_at=datetime.datetime.now(tz=timezone.utc))
 
 
 # Number of minutes to aggregate the data

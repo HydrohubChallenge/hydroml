@@ -56,7 +56,7 @@
                 </div>
                 <div class="modal-body">
                     <form method="post">
-                        <h5><strong>Parameters</strong></h5>
+                        <h5><strong>Hyperparameters</strong></h5>
                         <table class="table">
                       <thead>
                         <tr>
@@ -127,8 +127,6 @@
                     <th scope="col"></th>
                     <th scope="col" class="text-center">ID</th>
                     <th scope="col" class="text-center">Duration</th>
-                    <th scope="col" class="text-center">Start</th>
-                    <th scope="col" class="text-center">Finish</th>
                     <th scope="col" class="text-center">Accuracy</th>
                     <th scope="col" class="text-center">Precision</th>
                     <th scope="col" class="text-center">Recall</th>
@@ -155,8 +153,6 @@
                         {% else %}
                             <td class="text-center">{{ pred.updated_at|timeuntil:pred.created_at }}</td>
                         {% endif %}
-                        <td class="text-center">{{ pred.created_at|date:"d/m/Y g:i:s a" }}</td>
-                        <td class="text-center">{{ pred.updated_at|date:"d/m/Y g:i:s a" }}</td>
                         <td class="text-center">{{ pred.accuracy|stringformat:".4f" }}</td>
                         <td class="text-center">{{ pred.precision|stringformat:".4f" }}</td>
                         <td class="text-center">{{ pred.recall|stringformat:".4f" }}</td>
@@ -230,8 +226,6 @@
                                 <td class="text-center">{{ pred.updated_at|timeuntil:pred.created_at }}</td>
                             {% endif %}
                         {% endif %}
-                        <td>{{ pred.id}}</td>
-                        <td>{{ pred.created_at }}</td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -302,6 +296,7 @@
              "order": [[ 1, "desc" ]],
              columns: [
                  { orderable: false },
+                 null,
                  null,
                  null,
                  null,

@@ -37,7 +37,7 @@
                         <a class="nav-link text-secondary {% block features_link %}{% endblock %}" href="{% url 'features-tab' project_id=project.id %}">{% translate "Features" %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary {% block parameters_link %}{% endblock %}" href="{% url 'parameters-tab' project_id=project.id %}">{% translate "Parameters" %}</a>
+                        <a class="nav-link text-secondary {% block parameters_link %}{% endblock %}" href="{% url 'parameters-tab' project_id=project.id %}">{% translate "Hyperparameters" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary {% block labels_link %}{% endblock %}" href="{% url 'labels-tab' project_id=project.id %}">{% translate "Labels" %}</a>
