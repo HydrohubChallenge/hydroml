@@ -3,7 +3,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from .models import Project, ProjectLabel, ProjectFeature
 
-import pandas as pd
 
 class ProjectCreate(forms.ModelForm):
     class Meta:
@@ -141,14 +140,59 @@ class ProjectFeatureInlineFormset(forms.BaseInlineFormSet):
             # raise forms.ValidationError('You have to select at least one input column.')
             errors.append(forms.ValidationError('You have to select at least one input column.'))
 
-        if len(errors)>0:
+        if len(errors) > 0:
             raise forms.ValidationError(errors)
+
+
+class ProjectParametersInlineFormset(forms.BaseInlineFormSet):
+
+    def clean(self):
+        super().clean()
+        target_columns_count = 0
+        timestamp_columns_count = 0
+        input_columns_count = 0
+
+        errors = []
+
+        for form in self.forms:
+            current_type = form.cleaned_data['type']
+
+            if current_type == ProjectFeature.Type.TARGET:
+                target_columns_count += 1
+
+            elif current_type == ProjectFeature.Type.TIMESTAMP:
+                timestamp_columns_count += 1
+
+            elif current_type == ProjectFeature.Type.INPUT:
+                input_columns_count += 1
+
+        if target_columns_count > 1:
+            errors.append(forms.ValidationError('You can have only one target column.'))
+
+        if timestamp_columns_count > 1:
+            # raise forms.ValidationError('You can have only one timestamp column.')
+            errors.append(forms.ValidationError('You can have only one timestamp column.'))
+
+        if target_columns_count == 0:
+            # raise forms.ValidationError('You have to select one target column.')
+            errors.append(forms.ValidationError('You have to select one target column.'))
+
+        if timestamp_columns_count == 0:
+            # raise forms.ValidationError('You have to select one timestamp column.')
+            errors.append(forms.ValidationError('You have to select one timestamp column.'))
+
+        if input_columns_count == 0:
+            # raise forms.ValidationError('You have to select at least one input column.')
+            errors.append(forms.ValidationError('You have to select at least one input column.'))
+
+        if len(errors) > 0:
+            raise forms.ValidationError(errors)
+
 
 class ProjectPredictionUploadFile(forms.Form):
     def __init__(self, *args, **kwargs):
         self._project_id = kwargs.pop('project_id', None)
         super().__init__(*args, **kwargs)
-
 
     file = forms.FileField()
 
@@ -157,7 +201,6 @@ class ProjectPredictionUploadFile(forms.Form):
         project_features = ProjectFeature.objects.filter(project_id=int(self._project_id))
 
         input_column_names = []
-        target_column_name = None
 
         for project_feature in project_features:
             if project_feature.type == ProjectFeature.Type.INPUT:

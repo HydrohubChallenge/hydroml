@@ -11,8 +11,8 @@
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1 class="m-0">{{ project.name }}</h1>
-                    <h6 class="font-italic">Type: {{ project.get_type_display }}</h6>
                     <h6 class="font-italic">ID: {{ project.id }}</h6>
+                    <h6 class="font-italic">Type: {{ project.get_type_display }}</h6>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -37,13 +37,13 @@
                         <a class="nav-link text-secondary {% block features_link %}{% endblock %}" href="{% url 'features-tab' project_id=project.id %}">{% translate "Features" %}</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link text-secondary {% block parameters_link %}{% endblock %}" href="{% url 'parameters-tab' project_id=project.id %}">{% translate "Parameters" %}</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link text-secondary {% block labels_link %}{% endblock %}" href="{% url 'labels-tab' project_id=project.id %}">{% translate "Labels" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary {% block models_link %}{% endblock %}" href="{% url 'models-tab' project_id=project.id %}">{% translate "Models" %}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-secondary {% block metadata_link %}{% endblock %}" href="{% url 'metadata-tab' project_id=project.id %}">{% translate "Metadata" %}</a>
                     </li>
                 </ul>
 
@@ -60,8 +60,8 @@
                     <div class="tab-pane fade {% block  features_class %}{% endblock %}" id="Features">
                         {% block features_content %}{% endblock %}
                     </div>
-                   <div class="tab-pane fade {% block metadata_class %}{% endblock %}" id="metadata">
-                       {% block metadata_content %}{% endblock %}
+                   <div class="tab-pane fade {% block parameters_class %}{% endblock %}" id="parameters">
+                       {% block parameters_content %}{% endblock %}
                    </div>
                </div>
 

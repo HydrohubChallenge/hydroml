@@ -2,6 +2,8 @@
 
 {% load i18n %}
 
+{% load web_tags %}
+
 {% block messages %}
     {% if messages %}
     <div class="modal fade" id="messageModal" tabindex="-1" role="dialog"
@@ -47,12 +49,37 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Confirm Features</h5>
+                    <h5 class="modal-title"><strong>Confirm Settings</strong></h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
+                    <form method="post">
+                        <h5><strong>Parameters</strong></h5>
+                        <table class="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">NAME</th>
+                          <th scope="col">VALUE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+
+                           {{ project_parameters_formset.management_form }}
+                           {% csrf_token %}
+                           {% for form in project_parameters_formset %}
+                           {{ form.id }}
+                           {{ form.name.as_hidden }}
+                           <tr>
+                             <td>{{ form.name.value }}</td>
+                             <td>{{form.value}}</td>
+                             <td></td>
+                           </tr>
+                           {% endfor %}
+                      </tbody>
+                    </table>
+                        <h5><strong>Features</strong></h5>
                     <table class="table">
                       <thead>
                         <tr>
@@ -61,7 +88,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <form method="post">
+
                            {{ project_feature_formset.management_form }}
                            {% csrf_token %}
                            {% for form in project_feature_formset %}
@@ -83,9 +110,10 @@
                                  </button>
                              </td>
                            </tr>
-                       </form>
+
                       </tbody>
                     </table>
+                        </form>
                 </div>
             </div>
         </div>
@@ -98,6 +126,7 @@
                 <tr>
                     <th scope="col"></th>
                     <th scope="col" class="text-center">ID</th>
+                    <th scope="col" class="text-center">Duration</th>
                     <th scope="col" class="text-center">Start</th>
                     <th scope="col" class="text-center">Finish</th>
                     <th scope="col" class="text-center">Accuracy</th>
@@ -105,6 +134,7 @@
                     <th scope="col" class="text-center">Recall</th>
                     <th scope="col" class="text-center">F1 Score</th>
                     <th scope="col" class="text-center">Confusion Matrix</th>
+                    <th scope="col" class="text-center">Parameters</th>
                     <th scope="col" class="text-center">Input</th>
                     <th scope="col" class="text-center">Target</th>
                     <th scope="col" class="text-center">Skip</th>
@@ -119,6 +149,12 @@
                     <tr>
                         <td><span class="badge badge-success">Success</span></td>
                         <td class="text-center">{{ pred.id }}</td>
+                        {% duration pred.created_at pred.updated_at as duration_time %}
+                        {% if duration_time %}
+                            <td class="text-center">< 1 minute</td>
+                        {% else %}
+                            <td class="text-center">{{ pred.updated_at|timeuntil:pred.created_at }}</td>
+                        {% endif %}
                         <td class="text-center">{{ pred.created_at|date:"d/m/Y g:i:s a" }}</td>
                         <td class="text-center">{{ pred.updated_at|date:"d/m/Y g:i:s a" }}</td>
                         <td class="text-center">{{ pred.accuracy|stringformat:".4f" }}</td>
@@ -141,6 +177,9 @@
                                 {% endif %}
                             {% endfor %}
                             </table>
+                        </td>
+                        <td class="text-center">
+                            {{ pred.parameters|linebreaksbr }}
                         </td>
                         <td class="text-center">
                             {{ pred.input_features|linebreaksbr }}
@@ -177,10 +216,19 @@
                     </tr>
                     {% else %}
                     <tr>
-                        {% if pred.status == 2%}
-                          <td><span class="badge badge-warning">Training</span></td>
-                        {% elif pred.status == 3%}
+                        {% if pred.status == 2 %}
+                            <td><span class="badge badge-warning">Training</span></td>
+                            <td class="text-center">{{ pred.id}}</td>
+                            <td></td>
+                        {% elif pred.status == 3 %}
                             <td><span class="badge badge-danger">Error</span></td>
+                            <td class="text-center">{{ pred.id}}</td>
+                            {% duration pred.created_at pred.updated_at as duration_time %}
+                            {% if duration_time %}
+                                <td class="text-center">< 1 minute</td>
+                            {% else %}
+                                <td class="text-center">{{ pred.updated_at|timeuntil:pred.created_at }}</td>
+                            {% endif %}
                         {% endif %}
                         <td>{{ pred.id}}</td>
                         <td>{{ pred.created_at }}</td>

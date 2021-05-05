@@ -1,0 +1,42 @@
+{% extends 'web/project_view.html' %}
+
+{% load i18n %}
+
+{% block parameters_link %}active disabled{% endblock %}
+
+{% block parameters_class %}show active{% endblock %}
+
+{% block parameters_content %}
+<div style="margin: 10px; margin-left: 0px;">
+      <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">NAME</th>
+              <th scope="col">VALUE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <form method="post">
+               {{ project_parameters_formset.management_form }}
+               <b><font st color=red> {{ project_parameters_formset.non_form_errors }}</font></b>
+               {% csrf_token %}
+               {% for form in project_parameters_formset %}
+               {{ form.id }}
+               {{ form.name.as_hidden }}
+               <tr>
+                 <td>{{ form.name.value }}</td>
+                 <td>{{form.value}}</td>
+                 <td></td>
+               </tr>
+               {% endfor %}
+               <tr>
+                 <td></td>
+                 <td>
+                     <button class="btn btn-lg btn-success" type="submit">{% translate " Save" %}</button>
+                 </td>
+               </tr>
+           </form>
+         </tbody>
+      </table>
+ </div>
+{% endblock %}
