@@ -142,7 +142,21 @@ class ProjectPrediction(BaseModel):
         decimal_places=17,
     )
 
-    confusion_matrix = models.TextField(
+    predicted = ArrayField(
+        models.DecimalField(
+            max_digits=100,
+            decimal_places=50,
+        ),
+        null=True,
+        blank=True,
+    )
+
+    expected = ArrayField(
+        models.DecimalField(
+            max_digits=100,
+            decimal_places=50,
+        ),
+        null=True,
         blank=True,
     )
 
@@ -153,6 +167,10 @@ class ProjectPrediction(BaseModel):
         ),
         null=True,
         blank=True,
+    )
+
+    parameters = models.TextField(
+        null=True,
     )
 
     serialized_prediction_file = models.FileField(
@@ -203,3 +221,26 @@ class ProjectFeature(BaseModel):
 
     def __str__(self):
         return f'{self.project} - {self.column}'
+
+
+class ProjectParameters(BaseModel):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.DO_NOTHING,
+    )
+
+    name = models.CharField(
+        max_length=50,
+    )
+
+    value = models.IntegerField(
+        null=True,
+        blank=False,
+    )
+
+    default = models.TextField(
+        null=True,
+    )
+
+    def __str__(self):
+        return self.name

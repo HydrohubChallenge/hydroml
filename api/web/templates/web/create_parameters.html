@@ -1,0 +1,68 @@
+{% extends 'web/index.html' %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Create Parameters</h1>
+                    <h5 class="m-0">Step: 2 of 3</h5>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
+                            <li class="breadcrumb-item active">Create Parameters</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <div class="content">
+            <div class="container-flex bg-white rounded" style="text-align: left;min-height: 40rem; padding-top: 50px;">
+                <div style="margin: 0 auto; width: 80%;">
+                  <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th scope="col">NAME</th>
+                          <th scope="col">VALUE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <form method="post">
+                           {{ project_parameters_formset.management_form }}
+                           <b><font st color=red> {{ project_parameters_formset.non_form_errors }}</font></b>
+                           {% csrf_token %}
+                           {% for form in project_parameters_formset %}
+                           {{ form.id }}
+                            {{ form.name.as_hidden }}
+                           <tr>
+                             <td>{{ form.name.value }}</td>
+                             <td>{{form.value}}</td>
+                             <td></td>
+                           </tr>
+                           {% endfor %}
+                           <tr>
+                             <td></td>
+                             <td>
+                                 <a class="btn btn-lg btn-warning" href="{% url 'update-project' project_id=project_id %}">{% translate " Return" %}</a>
+                                 <button class="btn btn-lg btn-success" type="submit">{% translate " Next" %}</button>
+                             </td>
+                           </tr>
+                       </form>
+                     </tbody>
+                   </table>
+
+                </div>
+            </div>
+    </div>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
