@@ -13,11 +13,11 @@
                 {% for message in messages %}
                 <div class="modal-header {{message.tags}}">
                     {% if message.tags == 'alert-success' %}
-                        <h5 class="modal-title text-light"><strong>Success</strong></h5>
+                        <h5 class="modal-title text-light"><strong>{% translate "Success" %}</strong></h5>
                     {% elif message.tags == 'alert-danger' %}
-                        <h5 class="modal-title text-light"><strong>Error</strong></h5>
+                        <h5 class="modal-title text-light"><strong>{% translate "Error" %}</strong></h5>
                     {% endif %}
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="{% blocktranslate %}Close{% endblocktranslate %}">
                   <span aria-hidden="true">&times;</span>
                 </button>
                 </div>
@@ -27,7 +27,7 @@
                      </ul>
                 </div>
                 <div class="modal-footer">
-                    <a type="button" class="btn btn-primary" data-dismiss="modal">Close</a>
+                    <a type="button" class="btn btn-primary" data-dismiss="modal">{% translate "Close" %}</a>
                 </div>
                 {% endfor %}
             </div>
@@ -42,26 +42,26 @@
 
 {% block models_content %}
 <div style="margin: 10px; margin-left: 0px;">
-    <button class="btn btn-lg btn-success trainButton">Train Model</button>
+    <button class="btn btn-lg btn-success trainButton">{% translate "Train Model" %}</button>
 
     <div id="trainModal" class="modal fade" tabindex="-1" role="dialog"
          aria-labelledby="trainModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><strong>Confirm Settings</strong></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <h5 class="modal-title"><strong>{% translate "Confirm Settings" %}</strong></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{% blocktranslate %}Close{% endblocktranslate %}">
                       <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <form method="post">
-                        <h5><strong>Hyperparameters</strong></h5>
+                        <h5><strong>{% translate "Hyperparameters" %}</strong></h5>
                         <table class="table">
                       <thead>
                         <tr>
-                          <th scope="col">NAME</th>
-                          <th scope="col">VALUE</th>
+                          <th scope="col">{% translate "NAME" %}</th>
+                          <th scope="col">{% translate "VALUE" %}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -79,12 +79,12 @@
                            {% endfor %}
                       </tbody>
                     </table>
-                        <h5><strong>Features</strong></h5>
+                        <h5><strong>{% translate "Features" %}</strong></h5>
                     <table class="table">
                       <thead>
                         <tr>
-                          <th scope="col">COLUMN</th>
-                          <th scope="col">FEATURES</th>
+                          <th scope="col">{% translate "COLUMN" %}</th>
+                          <th scope="col">{% translate "FEATURES" %}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -102,11 +102,11 @@
                            {% endfor %}
                            <tr>
                              <td>
-                                 <button type="button" class="btn btn-danger" data-dismiss="modal" style="width: 150px;">Cancel</button>
+                                 <button type="button" class="btn btn-danger" data-dismiss="modal" style="width: 150px;">{% translate "Cancel" %}</button>
                              </td>
                              <td>
                                  <button class="btn btn-success" type="submit" style="width: 150px;">
-                                     {% translate " Start Training" %}
+                                     {% translate "Start Training" %}
                                  </button>
                              </td>
                            </tr>
@@ -126,16 +126,16 @@
                 <tr>
                     <th scope="col"></th>
                     <th scope="col" class="text-center">ID</th>
-                    <th scope="col" class="text-center">Duration</th>
-                    <th scope="col" class="text-center">Accuracy</th>
-                    <th scope="col" class="text-center">Precision</th>
-                    <th scope="col" class="text-center">Recall</th>
-                    <th scope="col" class="text-center">F1 Score</th>
-                    <th scope="col" class="text-center">Confusion Matrix</th>
-                    <th scope="col" class="text-center">Parameters</th>
-                    <th scope="col" class="text-center">Input</th>
-                    <th scope="col" class="text-center">Target</th>
-                    <th scope="col" class="text-center">Skip</th>
+                    <th scope="col" class="text-center">{% translate "Duration" %}</th>
+                    <th scope="col" class="text-center">{% translate "Accuracy" %}</th>
+                    <th scope="col" class="text-center">{% translate "Precision" %}</th>
+                    <th scope="col" class="text-center">{% translate "Recall" %}</th>
+                    <th scope="col" class="text-center">{% translate "F1 Score" %}</th>
+                    <th scope="col" class="text-center">{% translate "Confusion Matrix" %}</th>
+                    <th scope="col" class="text-center">{% translate "Hyperparameters" %}</th>
+                    <th scope="col" class="text-center">{% translate "Input" %}</th>
+                    <th scope="col" class="text-center">{% translate "Target" %}</th>
+                    <th scope="col" class="text-center">{% translate "Skip" %}</th>
                     <th scope="col"></th>
                     <th scope="col"></th>
                     <th scope="col"></th>
@@ -145,11 +145,11 @@
                 {% for pred in predictions %}
                     {% if pred.status == 1 %}
                     <tr>
-                        <td><span class="badge badge-success">Success</span></td>
+                        <td><span class="badge badge-success">{% translate "Success" %}</span></td>
                         <td class="text-center">{{ pred.id }}</td>
                         {% duration pred.created_at pred.updated_at as duration_time %}
                         {% if duration_time %}
-                            <td class="text-center">< 1 minute</td>
+                            <td class="text-center">{% translate "< 1 minute" %}</td>
                         {% else %}
                             <td class="text-center">{{ pred.updated_at|timeuntil:pred.created_at }}</td>
                         {% endif %}
@@ -192,20 +192,20 @@
                         </td>
                         <td>
                             <a href="{% url 'make-prediction' project_id=project.id prediction_id=pred.id %}"
-                               data-toggle="tooltip" data-placement="top" title="Make Prediction">
+                               data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Make Prediction{% endblocktranslate %}">
                                 <span class="fas fa-magic"></span>
                             </a>
                         </td>
                         <td>
                             <a href="{% url 'download-model' prediction_id=pred.id %}" download
-                               data-toggle="tooltip" data-placement="top" title="Download Model">
+                               data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Download Model{% endblocktranslate %}">
                                 <span class="fas fa-download"></span>
                             </a>
                         </td>
                         <td>
                             <a href="{% url 'delete-model' project_id=project.id prediction_id=pred.id %}" class="delete"
-                               data-confirm="Do you really want to delete these prediction? This process cannot be undone."
-                               data-toggle="tooltip" data-placement="top" title="Delete Model">
+                               data-confirm="{% blocktranslate %}Do you really want to delete these prediction? This process cannot be undone.{% endblocktranslate %}"
+                               data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Delete Model{% endblocktranslate %}">
                                 <span style="color: red;" class="fas fa-trash-alt"></span>
                             </a>
                         </td>
@@ -213,15 +213,15 @@
                     {% else %}
                     <tr>
                         {% if pred.status == 2 %}
-                            <td><span class="badge badge-warning">Training</span></td>
+                            <td><span class="badge badge-warning">{% translate "Training" %}</span></td>
                             <td class="text-center">{{ pred.id}}</td>
                             <td></td>
                         {% elif pred.status == 3 %}
-                            <td><span class="badge badge-danger">Error</span></td>
+                            <td><span class="badge badge-danger">{% translate "Error" %}</span></td>
                             <td class="text-center">{{ pred.id}}</td>
                             {% duration pred.created_at pred.updated_at as duration_time %}
                             {% if duration_time %}
-                                <td class="text-center">< 1 minute</td>
+                                <td class="text-center">{% translate "< 1 minute" %}</td>
                             {% else %}
                                 <td class="text-center">{{ pred.updated_at|timeuntil:pred.created_at }}</td>
                             {% endif %}
@@ -239,8 +239,8 @@
                         <td></td>
                         <td>
                             <a href="{% url 'delete-model' project_id=project.id prediction_id=pred.id %}" class="delete"
-                               data-confirm="Do you really want to delete these prediction? This process cannot be undone."
-                               data-toggle="tooltip" data-placement="top" title="Delete Model">
+                               data-confirm="{% blocktranslate %}Do you really want to delete these prediction? This process cannot be undone.{% endblocktranslate %}"
+                               data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Delete Model{% endblocktranslate %}">
                                 <span style="color: red;" class="fas fa-trash-alt"></span>
                             </a>
                         </td>

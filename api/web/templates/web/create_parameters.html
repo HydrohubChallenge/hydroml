@@ -9,13 +9,13 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Hyperparameters</h1>
-                    <h5 class="m-0">Step: 2 of 3</h5>
+                    <h1 class="m-0">{% translate "Hyperparameters" %}</h1>
+                    <h5 class="m-0">{% translate "Step: 2 of 3" %}</h5>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
-                            <li class="breadcrumb-item active">Hyperparameters</li>
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">{% translate "Projects" %}</a></li>
+                            <li class="breadcrumb-item active">{% translate "Hyperparameters" %}</li>
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -30,8 +30,8 @@
                   <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th scope="col">NAME</th>
-                          <th scope="col">VALUE</th>
+                          <th scope="col">{% translate "NAME" %}</th>
+                          <th scope="col">{% translate "VALUE" %}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -51,8 +51,8 @@
                            <tr>
                              <td></td>
                              <td>
-                                 <a class="btn btn-lg btn-warning" href="{% url 'update-project' project_id=project_id %}">{% translate " Return" %}</a>
-                                 <button class="btn btn-lg btn-success" type="submit">{% translate " Next" %}</button>
+                                 <a class="btn btn-lg btn-warning" href="{% url 'update-project' project_id=project_id %}">{% translate "Return" %}</a>
+                                 <button class="btn btn-lg btn-success" type="submit">{% translate "Next" %}</button>
                              </td>
                            </tr>
                        </form>

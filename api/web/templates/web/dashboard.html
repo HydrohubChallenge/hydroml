@@ -10,11 +10,11 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Projects</h1>
+                    <h1 class="m-0">{% translate "Projects" %}</h1>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item active">Projects</li>
+                        <li class="breadcrumb-item active">{% translate "Projects" %}</li>
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -27,7 +27,7 @@
         <div class="container-fluid">
             <a class="btn btn-outline-dark" href="{% url 'create-project' %}" style="margin-bottom: 20px;">
                 <i class="fas fa-fw fa-plus" style="padding: 5px;"></i>
-                <span>New Project</span>
+                <span>{% translate "New Project" %}</span>
             </a>
             <div class="container-fluid">
                 <div class="row row-cols-4 row-cols-md-2">
@@ -38,7 +38,7 @@
                         <div class="card-body shadow">
                             <div class="row mb-2">
                                 <div class="col-sm-2" style="float: none; vertical-align:middle; display:inline-block; padding: 0;">
-                                    <a class="btn rounded-circle bg-gradient-lightblue shadow" style="width: 31px; height: 31px; padding: 0" href="{% url 'data-tab' project_id=project.id %}">
+                                    <a class="btn rounded-circle bg-gradient-lightblue shadow" style="width: 31px; height: 31px; padding: 0" href="{% url 'data-tab' project_id=project.id mode='head-1' %}">
                                         {% if project.type == 1 %}
                                             <i class="fas fa-cloud-rain" style="width: 18px; height: 18px; margin-top: 5px;"></i>
                                         {% elif project.type == 2 %}
@@ -50,7 +50,7 @@
                                     <h5 class="card-title" style="display: flex; padding: 0;">
                                         <a class="text-secondary"
                                            style="max-width: 175px; font-size: 150%; flex-shrink: 1; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                                           href="{% url 'data-tab' project_id=project.id %}"
+                                           href="{% url 'data-tab' project_id=project.id mode='head-1' %}"
                                            data-toggle="tooltip" data-placement="top" title="{{ project.name }}">
                                             {{ project.name }}
                                         </a>
@@ -61,10 +61,10 @@
                                         <span class="fas fa-ellipsis-v align-top"></span>
                                     </a>
                                     <div aria-labelledby="dropdown-project" class="dropdown-menu" style="min-width: 3rem;">
-                                        <a class="dropdown-item" href="clone/{{project.id}}" id='{{project.id}}' data-toggle="tooltip" data-placement="top" title="Clone Project">
+                                        <a class="dropdown-item" href="clone/{{project.id}}" id='{{project.id}}' data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Clone Project{% endblocktranslate %}">
                                             <i style="color: blue;" class="far fa-clone"></i>
                                         </a>
-                                        <a class="dropdown-item" href="update/{{project.id}}" id='{{project.id}}' data-toggle="tooltip" data-placement="top" title="Edit Project">
+                                        <a class="dropdown-item" href="update/{{project.id}}" id='{{project.id}}' data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Edit Project{% endblocktranslate %}">
                                             <i style="color: blue;" class="fas fa-pencil-alt"></i>
                                         </a>
 <!--                                        <a class="dropdown-item delete" href="#confirmDeleteModal{{project.id}}" class="delete" data-toggle="modal">-->
@@ -83,17 +83,17 @@
                                     <div class="modal-dialog modal-dialog-centered" role="document">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                            <h5 class="modal-title" id="DeleteConfirmationTitle">Are you sure?</h5>
+                                            <h5 class="modal-title" id="DeleteConfirmationTitle">{% translate "Are you sure?" %}</h5>
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                               <span aria-hidden="true">&times;</span>
                                             </button>
                                             </div>
                                             <div class="modal-body">
                                                 <form action="{% url 'delete-project' project.id %}" method="post">{% csrf_token %}
-                                                <h6>Do you really want to delete these project? This process cannot be undone.</h6>
+                                                <h6>{% translate "Do you really want to delete these project? This process cannot be undone." %}</h6>
                                                     <br>
-                                                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-danger btn-md">Delete</button>
+                                                    <button type="button" class="btn btn-default" data-dismiss="modal">{% translate "Cancel" %}</button>
+                                                    <button type="submit" class="btn btn-danger btn-md">{% translate "Delete" %}</button>
                                                 </form>
                                             </div>
                                         </div>
@@ -101,10 +101,10 @@
                                 </div>
 
                             </div>
-                            <p class="card-text"><small><strong>Created:</strong></small> {{project.created_at}}</p>
-                            <p class="card-text"><small><strong>Modified:</strong></small> {{project.updated_at}}</p>
+                            <p class="card-text"><small><strong>{% translate "Created:" %}</strong></small> {{project.created_at}}</p>
+                            <p class="card-text"><small><strong>{% translate "Modified:" %}</strong></small> {{project.updated_at}}</p>
                             <div class="card-footer border-dark align-bottom" style="padding: 0;">
-                                <p class="card-text" style="margin-bottom: 0;"><small><strong>Description:</strong></small></p>
+                                <p class="card-text" style="margin-bottom: 0;"><small><strong>{% translate "Description:" %}</strong></small></p>
                                 <p class="card-text" style="margin-left: 10px;">{{ project.description }}</p>
                             </div>
                         </div>

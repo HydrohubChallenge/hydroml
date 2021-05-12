@@ -3,14 +3,9 @@ import math
 import os
 import pickle
 import tempfile
-import ast
 import pandas as pd
 import numpy as np
-import requests
-import zipfile
 from os.path import basename
-import datetime
-
 
 from django.conf import settings
 from django.contrib import messages
@@ -19,22 +14,14 @@ from django.forms import inlineformset_factory
 from django.http import FileResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.translation import get_language
+from django.utils.translation import ugettext_lazy as _
 from keras.models import load_model
-from keras.models import model_from_json
-
-from rest_framework import viewsets, permissions, status, authentication
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view
-
-from rest_framework import viewsets, permissions, status, authentication
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 
 from .forms import ProjectCreate, ProjectLabelCreate, ProjectFeatureInlineFormset, ProjectPredictionUploadFile
 from .models import Project, ProjectLabel, ProjectPrediction, ProjectFeature, ProjectParameters
-from .tasks import train_precipitation_prediction, train_water_level_prediction, LSTM, Classifier, get_MAPE
+from .tasks import train_precipitation_prediction, train_water_level_prediction, LSTM, Classifier
 
 
 @login_required
@@ -352,7 +339,7 @@ def train_project(request, project_id):
     elif project_sel.type == Project.Type.WATER_LEVEL:
         train_water_level_prediction.delay(project_id, prediction.id)
 
-    messages.add_message(request, messages.SUCCESS, 'New training started')
+    messages.add_message(request, messages.SUCCESS, _('New training started'))
 
     return redirect('models-tab', project_id=project_id)
 
@@ -560,7 +547,7 @@ def handle_uploaded_file(file, project_id, prediction_id):
 
 
 @login_required
-def data_tab(request, project_id):
+def data_tab(request, project_id, mode):
     project_id = int(project_id)
     try:
         project_sel = Project.objects.get(id=project_id)
@@ -569,6 +556,24 @@ def data_tab(request, project_id):
         file = open(csv_file, 'r')
         df = pd.read_csv(file, delimiter=csv_delimiter)
         df.fillna('NaN', inplace=True)
+
+        if mode == 'head-1':
+            df = df.head(1000)
+        elif mode == 'head-5':
+            df = df.head(5000)
+        elif mode == 'head-10':
+            df = df.head(10000)
+        elif mode == 'tail-1':
+            df = df.tail(1000)
+        elif mode == 'tail-5':
+            df = df.tail(5000)
+        elif mode == 'tail-10':
+            df = df.tail(10000)
+        elif mode == 'all':
+            df = df
+        else:
+            return redirect("index")
+
         data = df.values.tolist()
         columns = df.columns.values.tolist()
 
@@ -606,12 +611,14 @@ def data_tab(request, project_id):
                 'values': json_list,
                 'input_size': input_size,
                 'input_columns': input_columns,
+                'mode': mode,
             }
         except ProjectFeature.DoesNotExist:
             content = {
                 'loaded_data': data,
                 'columns': columns,
                 'project': project_sel,
+                'mode': mode,
             }
 
     except Project.DoesNotExist:
@@ -772,7 +779,7 @@ def api_prediction(request):
             project_prediction = ProjectPrediction.objects.get(id=prediction_id)
             project_sel = project_prediction.project
             project_features = ProjectFeature.objects.filter(project_id=project_sel.id)
-        except ProjectPrediction.DoesNotExist :
+        except ProjectPrediction.DoesNotExist:
             return Response({"error": "Prediction ID not found."})
         except Project.DoesNotExist:
             return Response({"error": "Project ID not found."})

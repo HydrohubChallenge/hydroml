@@ -8,10 +8,10 @@ class ProjectCreate(forms.ModelForm):
     class Meta:
         model = Project
         OPTIONS = (
-            (',', 'Comma'),
-            (';', 'Dot-Comma'),
-            ('\t', 'Tab'),
-            (' ', 'Space'),
+            (',', _('Comma')),
+            (';', _('Dot-Comma')),
+            ('\t', _('Tab')),
+            (' ', _('Space')),
         )
         fields = [
             'name',
@@ -122,68 +122,23 @@ class ProjectFeatureInlineFormset(forms.BaseInlineFormSet):
                 input_columns_count += 1
 
         if target_columns_count > 1:
-            errors.append(forms.ValidationError('You can have only one target column.'))
+            errors.append(forms.ValidationError(_('You can have only one target column.')))
 
         if timestamp_columns_count > 1:
             # raise forms.ValidationError('You can have only one timestamp column.')
-            errors.append(forms.ValidationError('You can have only one timestamp column.'))
+            errors.append(forms.ValidationError(_('You can have only one timestamp column.')))
 
         if target_columns_count == 0:
             # raise forms.ValidationError('You have to select one target column.')
-            errors.append(forms.ValidationError('You have to select one target column.'))
+            errors.append(forms.ValidationError(_('You have to select one target column.')))
 
         if timestamp_columns_count == 0:
             # raise forms.ValidationError('You have to select one timestamp column.')
-            errors.append(forms.ValidationError('You have to select one timestamp column.'))
+            errors.append(forms.ValidationError(_('You have to select one timestamp column.')))
 
         if input_columns_count == 0:
             # raise forms.ValidationError('You have to select at least one input column.')
-            errors.append(forms.ValidationError('You have to select at least one input column.'))
-
-        if len(errors) > 0:
-            raise forms.ValidationError(errors)
-
-
-class ProjectParametersInlineFormset(forms.BaseInlineFormSet):
-
-    def clean(self):
-        super().clean()
-        target_columns_count = 0
-        timestamp_columns_count = 0
-        input_columns_count = 0
-
-        errors = []
-
-        for form in self.forms:
-            current_type = form.cleaned_data['type']
-
-            if current_type == ProjectFeature.Type.TARGET:
-                target_columns_count += 1
-
-            elif current_type == ProjectFeature.Type.TIMESTAMP:
-                timestamp_columns_count += 1
-
-            elif current_type == ProjectFeature.Type.INPUT:
-                input_columns_count += 1
-
-        if target_columns_count > 1:
-            errors.append(forms.ValidationError('You can have only one target column.'))
-
-        if timestamp_columns_count > 1:
-            # raise forms.ValidationError('You can have only one timestamp column.')
-            errors.append(forms.ValidationError('You can have only one timestamp column.'))
-
-        if target_columns_count == 0:
-            # raise forms.ValidationError('You have to select one target column.')
-            errors.append(forms.ValidationError('You have to select one target column.'))
-
-        if timestamp_columns_count == 0:
-            # raise forms.ValidationError('You have to select one timestamp column.')
-            errors.append(forms.ValidationError('You have to select one timestamp column.'))
-
-        if input_columns_count == 0:
-            # raise forms.ValidationError('You have to select at least one input column.')
-            errors.append(forms.ValidationError('You have to select at least one input column.'))
+            errors.append(forms.ValidationError(_('You have to select at least one input column.')))
 
         if len(errors) > 0:
             raise forms.ValidationError(errors)

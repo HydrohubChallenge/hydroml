@@ -26,7 +26,7 @@ urlpatterns = [
     path('update/<int:project_id>', views.update_project, name='update-project'),
     path('clone/<int:project_id>', views.clone_project),
     path('delete/<int:project_id>', views.delete_project, name='delete-project'),
-    path('project/<int:project_id>/data/', views.data_tab, name='data-tab'),
+    path('project/<int:project_id>/data/<str:mode>', views.data_tab, name='data-tab'),
     path('project/<int:project_id>/features/', views.features_tab, name='features-tab'),
     path('project/<int:project_id>/labels/', views.labels_tab, name='labels-tab'),
     path('project/<int:project_id>/models/', views.models_tab, name='models-tab'),

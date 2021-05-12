@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ugettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
 
 
@@ -49,7 +49,7 @@ class Project(BaseModel):
     )
 
     description = models.TextField(
-        default='New Project',
+        default=_('New Project'),
     )
 
     type = models.IntegerField(
@@ -89,7 +89,7 @@ class ProjectLabel(BaseModel):
     )
 
     description = models.TextField(
-        default='New Label',
+        default=_('New Label'),
     )
 
     color = models.CharField(

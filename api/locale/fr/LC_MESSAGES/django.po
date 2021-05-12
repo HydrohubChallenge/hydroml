@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-12-23 18:43+0000\n"
+"POT-Creation-Date: 2021-05-11 22:32+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,19 +18,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: hydroml/settings.py:138
+#: hydroml/settings.py:142
 msgid "English"
 msgstr "Anglais"
 
-#: hydroml/settings.py:139
+#: hydroml/settings.py:143
 msgid "Portuguese"
 msgstr "Portugais"
 
-#: hydroml/settings.py:140
+#: hydroml/settings.py:144
 msgid "Spanish"
 msgstr "Espagnol"
 
-#: hydroml/settings.py:141
+#: hydroml/settings.py:145
 msgid "French"
 msgstr "Français"
 
@@ -48,7 +48,9 @@ msgstr "Login"
 
 #: templates/registration/login.html:13
 msgid "LoginError"
-msgstr "Votre nom d'utilisateur et/ou votre mot de passe ne correspondent pas. Veuillez réessayer."
+msgstr ""
+"Votre nom d'utilisateur et/ou votre mot de passe ne correspondent pas. "
+"Veuillez réessayer."
 
 #: templates/registration/login.html:18
 msgid ""
@@ -72,72 +74,457 @@ msgstr "Entrer"
 msgid "LostPass"
 msgstr "Mot de passe perdu?"
 
-#: web/forms.py:47
+#: web/forms.py:11
+msgid "Comma"
+msgstr ""
+
+#: web/forms.py:12
+msgid "Dot-Comma"
+msgstr ""
+
+#: web/forms.py:13
+#, fuzzy
+#| msgid "DataTab"
+msgid "Tab"
+msgstr "Les Données"
+
+#: web/forms.py:14
+msgid "Space"
+msgstr ""
+
+#: web/forms.py:73 web/forms.py:178
 msgid "Wrong delimiter for the uploaded file."
 msgstr "Mauvais délimiteur pour le fichier téléchargé."
 
-#: web/forms.py:53
+#: web/forms.py:79 web/forms.py:184
 #, python-brace-format
 msgid "CSV file must have the following columns: {0}."
 msgstr "Le fichier CSV doit avoir les colonnes suivantes: {0}."
 
-#: web/forms.py:58
+#: web/forms.py:84 web/forms.py:189
 msgid "Please upload a .csv extension file only"
 msgstr "Veuillez télécharger uniquement un fichier d'extension .csv."
 
-#: web/templates/web/create_form.html:8
-msgid "Project"
-msgstr "Projet"
+#: web/forms.py:125
+msgid "You can have only one target column."
+msgstr ""
 
-#: web/templates/web/create_form.html:20 web/templates/web/create_label.html:20
-msgid "SaveButton"
-msgstr "Enregistrer"
+#: web/forms.py:129
+msgid "You can have only one timestamp column."
+msgstr ""
 
-#: web/templates/web/create_label.html:8
-msgid "Label"
-msgstr "Étiquette"
+#: web/forms.py:133
+msgid "You have to select one target column."
+msgstr ""
 
-#: web/templates/web/dashboard.html:43
-msgid "Profile"
-msgstr "Profil"
+#: web/forms.py:137
+msgid "You have to select one timestamp column."
+msgstr ""
 
-#: web/templates/web/dashboard.html:50
-msgid "Logout"
-msgstr "Déconnecter"
+#: web/forms.py:141
+msgid "You have to select at least one input column."
+msgstr ""
 
-#: web/templates/web/dashboard.html:59
+#: web/models.py:32
+msgid "Rainfall"
+msgstr ""
+
+#: web/models.py:33
+msgid "Water Level"
+msgstr ""
+
+#: web/models.py:36
+msgid "Complete"
+msgstr ""
+
+#: web/models.py:37
+msgid "Incomplete"
+msgstr ""
+
+#: web/models.py:52 web/templates/web/create_project.html:13
+#: web/templates/web/dashboard.html:30
+#, fuzzy
+#| msgid "NewProject"
+msgid "New Project"
+msgstr "Nouveau Projet"
+
+#: web/models.py:92 web/templates/web/create_label.html:14
+#: web/templates/web/labels_tab.html:13
+#, fuzzy
+#| msgid "NewLabel"
+msgid "New Label"
+msgstr "Nouvelle Étiquette"
+
+#: web/models.py:106 web/templates/web/models_tab.html:16
+#: web/templates/web/models_tab.html:148
+msgid "Success"
+msgstr ""
+
+#: web/models.py:107 web/templates/web/models_tab.html:216
+msgid "Training"
+msgstr ""
+
+#: web/models.py:108 web/templates/web/models_tab.html:18
+#: web/templates/web/models_tab.html:220
+#, fuzzy
+#| msgid "LoginError"
+msgid "Error"
+msgstr ""
+"Votre nom d'utilisateur et/ou votre mot de passe ne correspondent pas. "
+"Veuillez réessayer."
+
+#: web/models.py:203 web/templates/web/models_tab.html:137
+msgid "Target"
+msgstr ""
+
+#: web/models.py:204 web/templates/web/models_tab.html:138
+msgid "Skip"
+msgstr ""
+
+#: web/models.py:205 web/templates/web/models_tab.html:136
+msgid "Input"
+msgstr ""
+
+#: web/models.py:206
+msgid "Timestamp"
+msgstr ""
+
+#: web/templates/web/create_feature.html:12
+#: web/templates/web/create_feature.html:18
+#: web/templates/web/models_tab.html:82 web/templates/web/project_view.html:37
+msgid "Features"
+msgstr ""
+
+#: web/templates/web/create_feature.html:13
+msgid "Step: 3 of 3"
+msgstr ""
+
+#: web/templates/web/create_feature.html:17
+#: web/templates/web/create_label.html:21
+#: web/templates/web/create_parameters.html:17
+#: web/templates/web/create_project.html:21 web/templates/web/dashboard.html:13
+#: web/templates/web/dashboard.html:17 web/templates/web/index.html:41
+#: web/templates/web/make_prediction.html:16
+#: web/templates/web/project_view.html:19
 msgid "Projects"
 msgstr "Projets"
 
-#: web/templates/web/dashboard.html:73
-msgid "YourProjects"
-msgstr "Tes Projets"
+#: web/templates/web/create_feature.html:33
+#: web/templates/web/features_tab.html:14 web/templates/web/models_tab.html:86
+msgid "COLUMN"
+msgstr ""
 
-#: web/templates/web/dashboard.html:76
-msgid "NewProject"
-msgstr "Nouveau Projet"
+#: web/templates/web/create_feature.html:34
+#: web/templates/web/features_tab.html:15 web/templates/web/models_tab.html:87
+msgid "FEATURES"
+msgstr ""
 
-#: web/templates/web/dashboard.html:89 web/templates/web/project_view.html:34
-msgid "EditButton"
-msgstr "Éditer"
+#: web/templates/web/create_feature.html:54
+#: web/templates/web/create_parameters.html:54
+msgid "Return"
+msgstr ""
 
-#: web/templates/web/dashboard.html:90 web/templates/web/project_view.html:37
-msgid "DeleteButton"
+#: web/templates/web/create_feature.html:55
+#: web/templates/web/create_label.html:52
+#: web/templates/web/features_tab.html:35
+#: web/templates/web/parameters_tab.html:35
+msgid "Save"
+msgstr ""
+
+#: web/templates/web/create_label.html:16
+#: web/templates/web/create_label.html:26 web/templates/web/labels_tab.html:33
+#, fuzzy
+#| msgid "Label"
+msgid "Edit Label"
+msgstr "Étiquette"
+
+#: web/templates/web/create_label.html:24
+#, fuzzy
+#| msgid "NewLabel"
+msgid "Create Label"
+msgstr "Nouvelle Étiquette"
+
+#: web/templates/web/create_parameters.html:12
+#: web/templates/web/create_parameters.html:18
+#: web/templates/web/models_tab.html:59 web/templates/web/project_view.html:40
+msgid "Hyperparameters"
+msgstr ""
+
+#: web/templates/web/create_parameters.html:13
+msgid "Step: 2 of 3"
+msgstr ""
+
+#: web/templates/web/create_parameters.html:33
+#: web/templates/web/models_tab.html:63
+#: web/templates/web/parameters_tab.html:14
+msgid "NAME"
+msgstr ""
+
+#: web/templates/web/create_parameters.html:34
+#: web/templates/web/models_tab.html:64
+#: web/templates/web/parameters_tab.html:15
+msgid "VALUE"
+msgstr ""
+
+#: web/templates/web/create_parameters.html:55
+#: web/templates/web/create_project.html:52
+msgid "Next"
+msgstr ""
+
+#: web/templates/web/create_project.html:15
+#: web/templates/web/create_project.html:25 web/templates/web/dashboard.html:67
+#, fuzzy
+#| msgid "Project"
+msgid "Edit Project"
+msgstr "Projet"
+
+#: web/templates/web/create_project.html:17
+msgid "Step: 1 of 3"
+msgstr ""
+
+#: web/templates/web/create_project.html:23
+#, fuzzy
+#| msgid "Project"
+msgid "Create Project"
+msgstr "Projet"
+
+#: web/templates/web/dashboard.html:64
+#, fuzzy
+#| msgid "Project"
+msgid "Clone Project"
+msgstr "Projet"
+
+#: web/templates/web/dashboard.html:86
+msgid "Are you sure?"
+msgstr ""
+
+#: web/templates/web/dashboard.html:93
+msgid ""
+"Do you really want to delete these project? This process cannot be undone."
+msgstr ""
+
+#: web/templates/web/dashboard.html:95 web/templates/web/models_tab.html:105
+msgid "Cancel"
+msgstr ""
+
+#: web/templates/web/dashboard.html:96
+#, fuzzy
+#| msgid "DeleteButton"
+msgid "Delete"
 msgstr "Effacer"
 
-#: web/templates/web/project_view.html:7
-#, python-format
-msgid "Project: %(p_name)s "
-msgstr "Projet: %(p_name)s "
+#: web/templates/web/dashboard.html:104
+msgid "Created:"
+msgstr ""
 
-#: web/templates/web/project_view.html:10
-msgid "DataTab"
+#: web/templates/web/dashboard.html:105
+msgid "Modified:"
+msgstr ""
+
+#: web/templates/web/dashboard.html:107
+msgid "Description:"
+msgstr ""
+
+#: web/templates/web/data_tab.html:14 web/templates/web/data_tab.html:31
+#: web/templates/web/data_tab.html:34 web/templates/web/data_tab.html:37
+msgid "First 1000 records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:16
+msgid "First 5000 records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:18
+msgid "First 10000 records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:20 web/templates/web/data_tab.html:40
+msgid "Last 1000 records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:22 web/templates/web/data_tab.html:43
+msgid "Last 5000 records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:24 web/templates/web/data_tab.html:46
+msgid "Last 10000 records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:26 web/templates/web/data_tab.html:49
+msgid "All records"
+msgstr ""
+
+#: web/templates/web/data_tab.html:58
+msgid "Chart"
+msgstr ""
+
+#: web/templates/web/data_tab.html:71
+msgid "Table"
+msgstr ""
+
+#: web/templates/web/data_tab.html:77
+msgid "Download CSV"
+msgstr ""
+
+#: web/templates/web/data_tab.html:82
+msgid "Loading..."
+msgstr ""
+
+#: web/templates/web/data_tab.html:136
+msgid "Values Measured"
+msgstr ""
+
+#: web/templates/web/data_tab.html:148
+msgid "Measured"
+msgstr ""
+
+#: web/templates/web/labels_tab.html:27
+#, fuzzy
+#| msgid "NewLabel"
+msgid "Clone Label"
+msgstr "Nouvelle Étiquette"
+
+#: web/templates/web/labels_tab.html:39
+msgid ""
+"Do you really want to delete these label? This process cannot be undone."
+msgstr ""
+
+#: web/templates/web/labels_tab.html:40
+#, fuzzy
+#| msgid "NewLabel"
+msgid "Delete Label"
+msgstr "Nouvelle Étiquette"
+
+#: web/templates/web/make_prediction.html:12
+#: web/templates/web/make_prediction.html:17
+#: web/templates/web/models_tab.html:195
+msgid "Make Prediction"
+msgstr ""
+
+#: web/templates/web/make_prediction.html:44
+msgid "Upload"
+msgstr ""
+
+#: web/templates/web/make_prediction.html:53
+msgid "Results"
+msgstr ""
+
+#: web/templates/web/make_prediction.html:57
+msgid "Total Records"
+msgstr ""
+
+#: web/templates/web/make_prediction.html:61
+msgid "Good Records"
+msgstr ""
+
+#: web/templates/web/make_prediction.html:67
+msgid "Download Prediction File"
+msgstr ""
+
+#: web/templates/web/models_tab.html:20 web/templates/web/models_tab.html:30
+#: web/templates/web/models_tab.html:53
+msgid "Close"
+msgstr ""
+
+#: web/templates/web/models_tab.html:45
+msgid "Train Model"
+msgstr ""
+
+#: web/templates/web/models_tab.html:52
+msgid "Confirm Settings"
+msgstr ""
+
+#: web/templates/web/models_tab.html:109
+msgid "Start Training"
+msgstr ""
+
+#: web/templates/web/models_tab.html:129
+msgid "Duration"
+msgstr ""
+
+#: web/templates/web/models_tab.html:130
+msgid "Accuracy"
+msgstr ""
+
+#: web/templates/web/models_tab.html:131
+msgid "Precision"
+msgstr ""
+
+#: web/templates/web/models_tab.html:132
+msgid "Recall"
+msgstr ""
+
+#: web/templates/web/models_tab.html:133
+msgid "F1 Score"
+msgstr ""
+
+#: web/templates/web/models_tab.html:134
+msgid "Confusion Matrix"
+msgstr ""
+
+#: web/templates/web/models_tab.html:135
+msgid "Parameters"
+msgstr ""
+
+#: web/templates/web/models_tab.html:152 web/templates/web/models_tab.html:224
+msgid "< 1 minute"
+msgstr ""
+
+#: web/templates/web/models_tab.html:201
+msgid "Download Model"
+msgstr ""
+
+#: web/templates/web/models_tab.html:207 web/templates/web/models_tab.html:242
+msgid ""
+"Do you really want to delete these prediction? This process cannot be undone."
+msgstr ""
+
+#: web/templates/web/models_tab.html:208 web/templates/web/models_tab.html:243
+msgid "Delete Model"
+msgstr ""
+
+#: web/templates/web/project_view.html:15
+#, python-format
+msgid "Type: %(project.get_type_display)s"
+msgstr ""
+
+#: web/templates/web/project_view.html:34
+#, fuzzy
+#| msgid "DataTab"
+msgid "Data"
 msgstr "Les Données"
 
-#: web/templates/web/project_view.html:11
-msgid "LabelsTab"
-msgstr "Étiquettes"
+#: web/templates/web/project_view.html:43
+#, fuzzy
+#| msgid "Label"
+msgid "Labels"
+msgstr "Étiquette"
 
-#: web/templates/web/project_view.html:23
-msgid "NewLabel"
-msgstr "Nouvelle Étiquette"
+#: web/templates/web/project_view.html:46
+msgid "Models"
+msgstr ""
+
+#: web/views.py:342
+msgid "New training started"
+msgstr ""
+
+#~ msgid "SaveButton"
+#~ msgstr "Enregistrer"
+
+#~ msgid "Profile"
+#~ msgstr "Profil"
+
+#~ msgid "Logout"
+#~ msgstr "Déconnecter"
+
+#~ msgid "YourProjects"
+#~ msgstr "Tes Projets"
+
+#~ msgid "EditButton"
+#~ msgstr "Éditer"
+
+#~ msgid "Project: %(p_name)s "
+#~ msgstr "Projet: %(p_name)s "
+
+#~ msgid "LabelsTab"
+#~ msgstr "Étiquettes"
