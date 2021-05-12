@@ -11,19 +11,19 @@
             <div class="row mb-2">
                 <div class="col-sm-6">
                     {% if method == "create" %}
-                        <h1 class="m-0">New Label</h1>
+                        <h1 class="m-0">{% translate "New Label" %}</h1>
                     {% else %}
-                        <h1 class="m-0">Edit Label</h1>
+                        <h1 class="m-0">{% translate "Edit Label" %}</h1>
                     {% endif %}
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">{% translate "Projects" %}</a></li>
                         <li class="breadcrumb-item"><a href="{% url 'labels-tab' project.id %}">{{ project.name }}</a></li>
                         {% if method == "create" %}
-                            <li class="breadcrumb-item active">Create Label</li>
+                            <li class="breadcrumb-item active">{% translate "Create Label" %}</li>
                         {% else %}
-                            <li class="breadcrumb-item active">Edit Label</li>
+                            <li class="breadcrumb-item active">{% translate "Edit Label" %}</li>
                         {% endif %}
                     </ol>
                 </div><!-- /.col -->

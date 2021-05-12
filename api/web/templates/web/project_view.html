@@ -12,11 +12,11 @@
                 <div class="col-sm-6">
                     <h1 class="m-0">{{ project.name }}</h1>
                     <h6 class="font-italic">ID: {{ project.id }}</h6>
-                    <h6 class="font-italic">Type: {{ project.get_type_display }}</h6>
+                    <h6 class="font-italic">{% blocktranslate %}Type: {{ project.get_type_display }}{% endblocktranslate %}</h6>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">{% translate "Projects" %}</a></li>
                         <li class="breadcrumb-item active">{{ project.name }}</li>
                     </ol>
                 </div><!-- /.col -->
@@ -31,7 +31,7 @@
 
                 <ul class="nav nav-tabs" id="projectTab">
                     <li class="nav-item">
-                        <a class="nav-link text-secondary {% block data_link %}{% endblock %}" href="{% url 'data-tab' project_id=project.id %}">{% translate "Data" %}</a>
+                        <a class="nav-link text-secondary {% block data_link %}{% endblock %}" href="{% url 'data-tab' project_id=project.id mode='head-1'%}">{% translate "Data" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-secondary {% block features_link %}{% endblock %}" href="{% url 'features-tab' project_id=project.id %}">{% translate "Features" %}</a>

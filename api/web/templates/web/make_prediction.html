@@ -9,12 +9,12 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                        <h1 class="m-0">Make Prediction</h1>
+                        <h1 class="m-0">{% translate "Make Prediction" %}</h1>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Projects</a></li>
-                        <li class="breadcrumb-item active">Make Prediction</li>
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">{% translate "Projects" %}</a></li>
+                        <li class="breadcrumb-item active">{% translate "Make Prediction" %}</li>
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -41,7 +41,7 @@
                                 <tr>
                                     <td></td>
                                     <td>
-                                        <button class="btn btn-lg btn-success" type="submit">{% translate " Upload" %}</button>
+                                        <button class="btn btn-lg btn-success" type="submit">{% translate "Upload" %}</button>
                                     </td>
                                 </tr>
                             </table>
@@ -50,21 +50,21 @@
 
                 {% else %}
                     <div style="margin: 0 auto; width: 80%;">
-                        <h3>Results</h3>
+                        <h3>{% translate "Results" %}</h3>
                         <table class="table table-hover">
                             <tbody>
                                  <tr>
-                                   <td>Number of Rows</td>
+                                   <td>{% translate "Total Records" %}</td>
                                    <td>{{number_rows}}</td>
                                  </tr>
                                  <tr>
-                                   <td>Number of Success</td>
+                                   <td>{% translate "Good Records" %}</td>
                                    <td>{{number_success}}</td>
                                  </tr>
                                 <tr>
                                    <td>
                                        <a href="{% url 'download-prediction' prediction_id=prediction_id %}" download>
-                                           Download Prediction File
+                                           {% translate "Download Prediction File" %}
                                        </a>
                                    </td>
                                     <td></td>
