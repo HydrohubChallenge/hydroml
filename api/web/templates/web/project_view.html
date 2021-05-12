@@ -12,7 +12,7 @@
                 <div class="col-sm-6">
                     <h1 class="m-0">{{ project.name }}</h1>
                     <h6 class="font-italic">ID: {{ project.id }}</h6>
-                    <h6 class="font-italic">{% blocktranslate %}Type: {{ project.get_type_display }}{% endblocktranslate %}</h6>
+                    <h6 class="font-italic">{% blocktranslate %}Type: {% endblocktranslate %}{{ project.get_type_display }}</h6>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
